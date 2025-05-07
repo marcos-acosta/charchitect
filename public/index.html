@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SVG Path to Convex Polygons (Matter.js)</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 1rem;
+      }
+      label,
+      button {
+        display: block;
+        margin-top: 0.5rem;
+      }
+      textarea {
+        width: 95%;
+        max-width: 800px;
+        height: 100px;
+        margin-top: 5px;
+        font-family: monospace;
+        font-size: 0.9em;
+      }
+      #outputJson {
+        height: 250px;
+      }
+      pre {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .error {
+        color: red;
+        font-weight: bold;
+        margin-top: 1rem;
+      }
+      .info {
+        color: blue;
+        margin-top: 1rem;
+      }
+      .success {
+        color: green;
+        font-weight: bold;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SVG Path to Convex Polygons (for Matter.js)</h1>
+    <p>
+      This tool converts an SVG path string into a list of convex polygon
+      vertices suitable for Matter.js bodies.
+    </p>
+
+    <label for="svgPathInput">SVG Path 'd' Attribute:</label>
+    <textarea
+      id="svgPathInput"
+      placeholder="e.g., M10 80 C 40 10, 65 10, 95 80 S 150 150, 180 80"
+    ></textarea>
+
+    <label for="sampleCount">Sampling Detail (e.g., 15-40):</label>
+    <input type="number" id="sampleCount" value="30" min="2" />
+
+    <button onclick="processSVGPath()">Process Path</button>
+
+    <div id="statusArea"></div>
+
+    <h2>Output JSON:</h2>
+    <textarea
+      id="outputJson"
+      readonly
+      placeholder="Resulting JSON will appear here..."
+    ></textarea>
+
+    <h2>Output points:</h2>
+    <textarea
+      id="outputPoints"
+      readonly
+      placeholder="Resulting points will appear here..."
+    ></textarea>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/poly-decomp@0.3.0/build/decomp.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/pathseg@1.2.1/pathseg.min.js"></script>
+    <script>
+      function setStatus(message, type = "info") {
+        const statusArea = document.getElementById("statusArea");
+        statusArea.className = type; // Use classes for styling
+        statusArea.textContent = message;
+        if (type === "error") console.error(message);
+        else console.log(message);
+      }
+
+      function processSVGPath() {
+        const svgPathDAttribute = document
+          .getElementById("svgPathInput")
+          .value.trim();
+        const sampleCount =
+          parseInt(document.getElementById("sampleCount").value, 10) || 30;
+        const outputArea = document.getElementById("outputJson");
+        const outputPointsArea = document.getElementById("outputPoints");
+        outputArea.value = "";
+        setStatus("Starting processing...");
+
+        // --- Basic Checks & Setup ---
+        if (!svgPathDAttribute) {
+          /* ... error ... */ return;
+        }
+        if (typeof Matter === "undefined") {
+          /* ... error ... */ return;
+        }
+
+        let decomposerFunction = null; // Store the actual decomp function if found
+        if (typeof decomp === "undefined") {
+          setStatus("Warning: poly-decomp.js library not loaded.", "error");
+        } else {
+          // <<<=== VERIFY THE ACTUAL decomp.decomp FUNCTION ===>>>
+          console.log("Checking decomp object:", decomp);
+          if (typeof decomp.decomp === "function") {
+            // decomposerFunction = decomp.decomp; // Store the function itself
+            decomposerFunction = decomp.quickDecomp; // Store the function itself
+            console.log("Found decomp.decomp function.");
+            // Optional: Still call setDecomp for other potential internal uses
+            try {
+              Matter.Common.setDecomp(decomp);
+              console.log(
+                "Called Matter.Common.setDecomp (for internal consistency)."
+              );
+            } catch (setDecompErr) {
+              console.warn(
+                "Error calling Matter.Common.setDecomp:",
+                setDecompErr
+              );
+            }
+            setStatus(
+              "Dependencies loaded. Decomposition function found.",
+              "info"
+            );
+          } else {
+            setStatus(
+              'Warning: Loaded decomp object does NOT contain a "decomp" function. Cannot decompose.',
+              "error"
+            );
+          }
+          // <<<=============================================>>>
+        }
+
+        // --- Core Logic ---
+        try {
+          setStatus("Creating virtual SVG element...");
+          const pathElement = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          pathElement.setAttribute("d", svgPathDAttribute);
+
+          setStatus(
+            `Converting path to vertices (sample count: ${sampleCount})...`
+          );
+          let pathLength = pathElement.getTotalLength();
+          let vertices = [];
+          var i = 0;
+          while (i < pathLength) {
+            let arr = pathElement.getPointAtLength(i);
+            vertices.push({ x: arr.x, y: arr.y });
+            i += sampleCount;
+          }
+          // console.log(
+          //   "USE THIS:",
+          //   vertices.map((point) => [point.x, point.y])
+          // );
+
+          // const rawVertices = Matter.Svg.pathToVertices(
+          //   pathElement,
+          //   sampleCount
+          // );
+          const rawVertices = vertices;
+          if (!rawVertices || rawVertices.length === 0) {
+            throw new Error("Matter.Svg.pathToVertices returned no vertices.");
+          }
+          setStatus(`Generated ${rawVertices.length} raw vertices.`);
+
+          // // const clockwiseVertices = Matter.Vertices.clockwiseSort(rawVertices);
+          // const counterClockwiseVertices = rawVertices.map((point) => [
+          //   point.x,
+          //   point.y,
+          // ]);
+          // // console.log("Directly prior to CCW:", counterClockwiseVertices);
+          // decomp.makeCCW(counterClockwiseVertices);
+          // // console.log("Is simple?", decomp.isSimple(counterClockwiseVertices));
+          let outputData = null;
+
+          // Check if concave AND if we have a valid decomposition function
+          if (false) {
+            if (
+              counterClockwiseVertices.length > 3 &&
+              !Matter.Vertices.isConvex(counterClockwiseVertices)
+            ) {
+              setStatus("Shape is concave.");
+              if (decomposerFunction) {
+                // Check if we stored the function
+                setStatus(
+                  "Attempting manual decomposition using loaded library..."
+                );
+                try {
+                  // *** DIRECTLY CALL THE STORED FUNCTION ***
+                  console.log(
+                    "Directly prior to decompose:",
+                    counterClockwiseVertices
+                  );
+                  const decomposedParts = decomposerFunction(
+                    counterClockwiseVertices
+                  );
+
+                  if (decomposedParts && decomposedParts.length > 0) {
+                    outputData = { type: "concave", parts: decomposedParts };
+                    setStatus(
+                      `Successfully decomposed into ${decomposedParts.length} convex parts.`,
+                      "success"
+                    );
+                  } else {
+                    setStatus(
+                      "Manual decomposition returned no parts. Saving raw vertices.",
+                      "warning"
+                    );
+                    outputData = {
+                      type: "convex",
+                      vertices: counterClockwiseVertices,
+                    }; // Fallback
+                  }
+                } catch (decompError) {
+                  setStatus(
+                    `Error during manual decomposition: ${decompError.message}`,
+                    "error"
+                  );
+                  console.error("Decomposition Error:", decompError);
+                  outputData = {
+                    type: "convex",
+                    vertices: counterClockwiseVertices,
+                  }; // Fallback
+                }
+              } else {
+                // Concave but no valid decomposer function found
+                setStatus(
+                  "Cannot decompose concave shape; compatible decomposition function unavailable.",
+                  "warning"
+                );
+                outputData = {
+                  type: "convex",
+                  vertices: counterClockwiseVertices,
+                }; // Treat as convex hull
+              }
+            } else {
+              // Convex or simple
+              setStatus("Shape is convex or simple.");
+              outputData = {
+                type: "convex",
+                vertices: counterClockwiseVertices,
+              };
+            }
+          }
+
+          // // 4. Output the result as JSON
+          // const jsonOutput = JSON.stringify(outputData, null, 2);
+          // outputArea.value = jsonOutput;
+          // setStatus("Processing complete. JSON output generated.", "success");
+
+          // 4. Output the raw points
+          outputArea.value = JSON.stringify({
+            points: rawVertices.map((obj) => [obj.x, obj.y]),
+          });
+          setStatus("Completed processing of raw vectors", "success");
+
+          // const points = outputData["parts"].map((part) =>
+          //   part.map((point) => ({ x: point[0], y: point[1] }))
+          // );
+
+          // outputPointsArea.value = JSON.stringify(points, null, 2);
+        } catch (error) {
+          setStatus(`Error during processing: ${error.message}`, "error");
+          console.error("Detailed Error:", error);
+          outputArea.value = `{\n  "error": "${error.message}"\n}`;
+        }
+      }
+    </script>
+  </body>
+</html>

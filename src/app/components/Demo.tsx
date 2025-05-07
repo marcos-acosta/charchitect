@@ -53,8 +53,8 @@ export default function Demo() {
   const addGravity = () => {
     worldRef.current.gravity[1] = -9.82;
     worldRef.current.bodies.forEach((body) => {
-      body.damping = 0;
-      body.angularDamping = 0;
+      body.damping = 0.01;
+      body.angularDamping = 0.01;
     });
   };
 

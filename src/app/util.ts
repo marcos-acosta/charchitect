@@ -21,9 +21,9 @@ export const createLetterFromPoints = (
   normalizeFactor = 1500
 ) => {
   const concaveBody = new p2.Body({
-    mass: 1,
+    mass: 15,
     position: position,
-    angularDamping: stiff ? 1 : 0,
+    angularDamping: stiff ? 1 : 0.01,
     damping: stiff ? 1 : 0.1,
   });
   const letterPath = normalizePoints(points, normalizeFactor);

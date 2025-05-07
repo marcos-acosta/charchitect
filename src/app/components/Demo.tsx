@@ -2,7 +2,7 @@ import { useRef } from "react";
 import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
-import { LETTER_A } from "../letters";
+import LETTERS from "../letters";
 
 const createWorld = (canvasWidthMeters: number) => {
   // Create new physics world with gravity
@@ -20,10 +20,23 @@ const createWorld = (canvasWidthMeters: number) => {
   newWorld.addBody(groundBody);
 
   createLetterFromPoints(
-    LETTER_A as IPoints,
+    LETTERS.A as IPoints,
     [canvasWidthMeters / 2, 2],
     newWorld,
-    1000,
+    true
+  );
+
+  createLetterFromPoints(
+    LETTERS.B as IPoints,
+    [canvasWidthMeters / 2, 3],
+    newWorld,
+    true
+  );
+
+  createLetterFromPoints(
+    LETTERS.C as IPoints,
+    [canvasWidthMeters / 2, 4],
+    newWorld,
     true
   );
 
@@ -40,14 +53,13 @@ export default function Demo() {
   const addGravity = () => {
     worldRef.current.gravity[1] = -9.82;
     worldRef.current.bodies.forEach((body) => {
-      body.damping = 0.1;
-      body.angularDamping = 0.1;
+      body.damping = 0;
+      body.angularDamping = 0;
     });
   };
 
   return (
     <div className="physics-container">
-      <h2>P2.js Physics Demo</h2>
       <PhysicsRenderer
         worldRef={worldRef}
         width={CANVAS_WIDTH}

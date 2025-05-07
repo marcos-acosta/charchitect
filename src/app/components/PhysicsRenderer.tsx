@@ -10,10 +10,10 @@ interface PhysicsRendererProps {
 
 // Colors for different body types
 const colors = {
-  dynamic: "#3498db",
-  static: "#2ecc71",
-  kinematic: "#e74c3c",
-  selected: "#f39c12", // Color for selected objects
+  dynamic: "#000",
+  static: "#000",
+  kinematic: "#000",
+  selected: "#367beb", // Color for selected objects
 };
 
 export default function PhysicsRenderer(props: PhysicsRendererProps) {
@@ -165,7 +165,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
           ctx.fillStyle = color;
           ctx.fillRect(-width / 2, -height / 2, width, height);
-          ctx.strokeStyle = "#000";
+          ctx.strokeStyle = color;
           ctx.lineWidth = 0.02;
           ctx.strokeRect(-width / 2, -height / 2, width, height);
         } else if (shape instanceof p2.Circle) {
@@ -176,7 +176,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
           ctx.arc(0, 0, radius, 0, 2 * Math.PI);
           ctx.fillStyle = color;
           ctx.fill();
-          ctx.strokeStyle = "#000";
+          ctx.strokeStyle = color;
           ctx.lineWidth = 0.02;
           ctx.stroke();
 
@@ -184,7 +184,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.lineTo(radius, 0);
-          ctx.strokeStyle = "#000";
+          ctx.strokeStyle = color;
           ctx.stroke();
         } else if (shape instanceof p2.Convex) {
           // Draw convex polygon
@@ -201,8 +201,8 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
             ctx.closePath();
             ctx.fillStyle = color;
             ctx.fill();
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 0.02;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 0.01;
             ctx.stroke();
           }
         }
@@ -269,19 +269,10 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     const canvas = canvasRef.current;
     if (canvas) {
       // Set the canvas resolution correctly for high DPI displays
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = props.width * dpr;
-      canvas.height = props.height * dpr;
 
       // Scale the CSS size
       canvas.style.width = `${props.width}px`;
       canvas.style.height = `${props.height}px`;
-
-      // Scale the context
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.scale(dpr, dpr);
-      }
 
       // Initialize mouse physics body
       initMouseInteraction();
@@ -374,6 +365,8 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         display: "block",
         background: "#f8f9fa",
       }}
+      width={props.width}
+      height={props.height}
     />
   );
 }

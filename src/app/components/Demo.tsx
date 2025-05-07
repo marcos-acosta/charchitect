@@ -5,7 +5,8 @@ import PhysicsRenderer from "./PhysicsRenderer";
 const createWorld = (canvasWidthMeters: number, canvasHeightMeters: number) => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
-    gravity: [0, -9.82],
+    // gravity: [0, -9.82],
+    gravity: [0, 0],
   });
 
   // Add a ground plane
@@ -51,6 +52,10 @@ export default function Demo() {
     )
   );
 
+  const addGravity = () => {
+    worldRef.current.gravity[1] = -9.82;
+  };
+
   return (
     <div className="physics-container">
       <h2>P2.js Physics Demo</h2>
@@ -60,6 +65,7 @@ export default function Demo() {
         height={CANVAS_HEIGHT}
         pixelsPerMeter={PIXELS_PER_METER}
       />
+      <button onClick={addGravity}>Gravity</button>
     </div>
   );
 }

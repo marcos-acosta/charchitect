@@ -18,7 +18,7 @@ const colors = {
 export default function PhysicsRenderer(props: PhysicsRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(-1);
-  const previousTimeRef = useRef<number>(-1);
+  const previousTimeRef = useRef<number | null>(null);
 
   // Fixed timestep for physics simulation
   const fixedTimeStep = 1 / 60; // 60 fps
@@ -118,7 +118,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     }
 
     // Calculate time elapsed since last frame
-    const deltaTime = (time - previousTimeRef.current) / 1000; // in seconds
+    const deltaTime = (time - (previousTimeRef.current || 0)) / 1000; // in seconds
     previousTimeRef.current = time;
 
     // Step the physics world forward
@@ -168,7 +168,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         cancelAnimationFrame(requestRef.current);
       }
     };
-  }, [previousTimeRef.current, props.width, props.height]); // Re-initialize if these props change
+  }, [props.worldRef.current, props.width, props.height]); // Re-initialize if these props change
 
   return (
     <canvas

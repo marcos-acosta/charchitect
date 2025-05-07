@@ -16,13 +16,14 @@ export const normalizePoints = (points: IPoints, factor?: number) => {
 export const createLetterFromPoints = (
   points: IPoints,
   position: IPoint,
-  world: p2.World
+  world: p2.World,
+  normalizeFactor = 1500
 ) => {
   const concaveBody = new p2.Body({
     mass: 1,
     position: position,
   });
-  const letterPath = normalizePoints(points, 1500);
+  const letterPath = normalizePoints(points, normalizeFactor);
   concaveBody.fromPolygon(letterPath);
   world.addBody(concaveBody);
 };

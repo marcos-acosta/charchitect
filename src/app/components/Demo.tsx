@@ -23,6 +23,8 @@ const createWorld = (canvasWidthMeters: number, canvasHeightMeters: number) => {
     const body = new p2.Body({
       mass: 1,
       position: [Math.random() * 1 + canvasWidthMeters / 2, 2 + i * 1],
+      damping: 1,
+      angularDamping: 1,
     });
 
     // Randomly create either box or circle
@@ -54,6 +56,10 @@ export default function Demo() {
 
   const addGravity = () => {
     worldRef.current.gravity[1] = -9.82;
+    worldRef.current.bodies.forEach((body) => {
+      body.damping = 0.1;
+      body.angularDamping = 0.1;
+    });
   };
 
   return (

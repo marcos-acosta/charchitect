@@ -22,7 +22,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
   const previousTimeRef = useRef<number | null>(null);
 
   // Mouse interaction state
-  const mouseConstraintRef = useRef<p2.RevoluteConstraint | null>(null);
+  const mouseConstraintRef = useRef<p2.Constraint | null>(null);
   const mouseBodyRef = useRef<p2.Body | null>(null);
   const selectedBodyRef = useRef<p2.Body | null>(null);
   const isDraggingRef = useRef<boolean>(false);
@@ -88,17 +88,13 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       mouseBodyRef.current.position = worldPoint;
 
       // Create a constraint between the body and the mouse
-      const constraint = new p2.RevoluteConstraint(
-        mouseBodyRef.current,
-        hitBody,
-        {
-          worldPivot: worldPoint,
-          collideConnected: false,
-        }
-      );
+      const constraint = new p2.LockConstraint(mouseBodyRef.current, hitBody, {
+        // worldPivot: worldPoint,
+        collideConnected: false,
+      });
 
       // Set constraint parameters for smoother dragging
-      constraint.setStiffness(1000); // Spring stiffness
+      constraint.setStiffness(Math.max()); // Spring stiffness
       constraint.setRelaxation(1); // Relaxation for soft constraint
 
       props.worldRef.current.addConstraint(constraint);

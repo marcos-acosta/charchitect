@@ -17,11 +17,14 @@ export const createLetterFromPoints = (
   points: IPoints,
   position: IPoint,
   world: p2.World,
-  normalizeFactor = 1500
+  normalizeFactor = 1500,
+  stiff = false
 ) => {
   const concaveBody = new p2.Body({
     mass: 1,
     position: position,
+    angularDamping: stiff ? 1 : 0.1,
+    damping: stiff ? 1 : 0.1,
   });
   const letterPath = normalizePoints(points, normalizeFactor);
   concaveBody.fromPolygon(letterPath);

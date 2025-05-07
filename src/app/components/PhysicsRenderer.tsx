@@ -186,6 +186,25 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
           ctx.lineTo(radius, 0);
           ctx.strokeStyle = "#000";
           ctx.stroke();
+        } else if (shape instanceof p2.Convex) {
+          // Draw convex polygon
+          const vertices = shape.vertices;
+
+          if (vertices.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(vertices[0][0], vertices[0][1]);
+
+            for (let i = 1; i < vertices.length; i++) {
+              ctx.lineTo(vertices[i][0], vertices[i][1]);
+            }
+
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 0.02;
+            ctx.stroke();
+          }
         }
 
         ctx.restore(); // Restore after each shape

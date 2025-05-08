@@ -3,6 +3,7 @@ import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
 import LETTERS from "../letters";
+import CircularAnglePicker from "./AnglePicker";
 
 const createWorld = (canvasWidthMeters: number) => {
   // Create new physics world with gravity
@@ -133,20 +134,18 @@ export default function Demo() {
 
       <div className="controls">
         <div className="rotation-control">
-          <label>Rotation: {currentAngle}°</label>
-          <br />
-          <input
-            type="range"
-            min="0"
-            max="359"
-            value={currentAngle}
-            disabled={!lastSelectedBodyRef.current}
-            onMouseDown={() => startRotation()}
-            onChange={(e) => updateRotation(parseInt(e.target.value))}
-            onMouseUp={() => endRotation()}
-            onTouchStart={() => startRotation()}
-            onTouchEnd={() => endRotation()}
-          />
+          <div>
+            <CircularAnglePicker
+              angle={currentAngle}
+              disabled={!lastSelectedBodyId}
+              size={100}
+              onChange={(angle) => updateRotation(angle)}
+              onChangeStart={startRotation}
+              onChangeEnd={endRotation}
+              primaryColor="#367beb"
+              secondaryColor="#aaa"
+            />
+          </div>
         </div>
         <button onClick={addGravity}>Gravity</button>
       </div>

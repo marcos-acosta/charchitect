@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
@@ -49,6 +49,69 @@ const PIXELS_PER_METER = 80;
 
 export default function Demo() {
   const worldRef = useRef(createWorld(CANVAS_WIDTH / PIXELS_PER_METER));
+  // Add state to track if we have a selected body (for UI rendering)
+  const [lastSelectedBodyId, setLastSelectedBodyId] = useState<number | null>(
+    null
+  );
+  // Reference to track the last selected body
+  const lastSelectedBodyRef = useRef<p2.Body | null>(null);
+  // State to track if we're actively rotating (slider is being interacted with)
+  const [isRotating, setIsRotating] = useState(false);
+  // State to track the current angle for the slider
+  const [currentAngle, setCurrentAngle] = useState(0);
+  // Store original body type when switching to kinematic
+  const originalBodyTypeRef = useRef<
+    | typeof p2.Body.DYNAMIC
+    | typeof p2.Body.STATIC
+    | typeof p2.Body.KINEMATIC
+    | null
+  >(null);
+
+  // Convert radians to degrees for the slider
+  const radiansToDegrees = (rad: number) => Math.round((rad * 180) / Math.PI);
+  // Convert degrees to radians for p2.js
+  const degreesToRadians = (deg: number) => (deg * Math.PI) / 180;
+
+  // Update the angle state when a new body is selected
+  const updateSelectedBody = (body: p2.Body | null) => {
+    lastSelectedBodyRef.current = body;
+    if (body) {
+      setLastSelectedBodyId(body.id);
+      // Update the slider value to match the body's current angle
+      setCurrentAngle(radiansToDegrees(body.angle));
+    }
+  };
+
+  // Start rotation mode
+  const startRotation = () => {
+    const body = lastSelectedBodyRef.current;
+    if (body && body.type !== p2.Body.STATIC) {
+      originalBodyTypeRef.current = body.type;
+      body.type = p2.Body.KINEMATIC;
+      setIsRotating(true);
+    }
+  };
+
+  // Apply rotation based on slider value
+  const updateRotation = (degrees: number) => {
+    const body = lastSelectedBodyRef.current;
+    if (body && isRotating) {
+      const radians = degreesToRadians(degrees);
+      body.angle = radians;
+      body.angularVelocity = 0; // Prevent continued rotation
+      setCurrentAngle(degrees);
+    }
+  };
+
+  // End rotation mode
+  const endRotation = () => {
+    const body = lastSelectedBodyRef.current;
+    if (body && isRotating && originalBodyTypeRef.current !== null) {
+      body.type = originalBodyTypeRef.current;
+      originalBodyTypeRef.current = null;
+      setIsRotating(false);
+    }
+  };
 
   const addGravity = () => {
     worldRef.current.gravity[1] = -9.82;
@@ -65,8 +128,28 @@ export default function Demo() {
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
         pixelsPerMeter={PIXELS_PER_METER}
+        onObjectSelected={updateSelectedBody}
       />
-      <button onClick={addGravity}>Gravity</button>
+
+      <div className="controls">
+        <div className="rotation-control">
+          <label>Rotation: {currentAngle}°</label>
+          <br />
+          <input
+            type="range"
+            min="0"
+            max="359"
+            value={currentAngle}
+            disabled={!lastSelectedBodyRef.current}
+            onMouseDown={() => startRotation()}
+            onChange={(e) => updateRotation(parseInt(e.target.value))}
+            onMouseUp={() => endRotation()}
+            onTouchStart={() => startRotation()}
+            onTouchEnd={() => endRotation()}
+          />
+        </div>
+        <button onClick={addGravity}>Gravity</button>
+      </div>
     </div>
   );
 }

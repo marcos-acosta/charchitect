@@ -6,6 +6,7 @@ interface PhysicsRendererProps {
   width: number;
   height: number;
   pixelsPerMeter: number;
+  onObjectSelected?: (body: p2.Body | null) => void;
 }
 
 // Colors for different body types
@@ -74,7 +75,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     mouseBodyRef.current = mouseBody;
   };
 
-  // Start dragging a body
+  // Then in the component, update the startDrag function:
   const startDrag = (worldPoint: [number, number]) => {
     if (!props.worldRef.current || !mouseBodyRef.current) return;
 
@@ -84,12 +85,16 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       selectedBodyRef.current = hitBody;
       isDraggingRef.current = true;
 
+      // Notify parent component about the selected body
+      if (props.onObjectSelected) {
+        props.onObjectSelected(hitBody);
+      }
+
       // Position the mouse body at the click point
       mouseBodyRef.current.position = worldPoint;
 
       // Create a constraint between the body and the mouse
       const constraint = new p2.LockConstraint(mouseBodyRef.current, hitBody, {
-        // worldPivot: worldPoint,
         collideConnected: false,
       });
 

@@ -41,6 +41,13 @@ const createWorld = (canvasWidthMeters: number) => {
     true
   );
 
+  createLetterFromPoints(
+    LETTERS.D as IPoints,
+    [canvasWidthMeters / 2, 5],
+    newWorld,
+    true
+  );
+
   return newWorld;
 };
 

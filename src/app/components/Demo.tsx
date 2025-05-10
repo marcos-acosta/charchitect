@@ -22,28 +22,35 @@ const createWorld = (canvasWidthMeters: number) => {
 
   createLetterFromPoints(
     LETTERS.A as IPoints,
-    [canvasWidthMeters / 2, 2],
+    [canvasWidthMeters / 8, 6],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.B as IPoints,
-    [canvasWidthMeters / 2, 3],
+    [2 * (canvasWidthMeters / 8), 6],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.C as IPoints,
-    [canvasWidthMeters / 2, 4],
+    [3 * (canvasWidthMeters / 8), 6],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.D as IPoints,
-    [canvasWidthMeters / 2, 5],
+    [4 * (canvasWidthMeters / 8), 6],
+    newWorld,
+    true
+  );
+
+  createLetterFromPoints(
+    LETTERS.E as IPoints,
+    [5 * (canvasWidthMeters / 8), 6],
     newWorld,
     true
   );

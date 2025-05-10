@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, RefObject } from "react";
+import React, { useRef, useEffect, RefObject, useState } from "react";
 import * as p2 from "p2-es";
 
 interface PhysicsRendererProps {
@@ -7,6 +7,9 @@ interface PhysicsRendererProps {
   height: number;
   pixelsPerMeter: number;
   onObjectSelected?: (body: p2.Body | null) => void;
+  onRotationStart?: (body: p2.Body) => void;
+  onRotation?: (body: p2.Body, angle: number) => void;
+  onRotationEnd?: (body: p2.Body) => void;
 }
 
 // Colors for different body types
@@ -15,7 +18,13 @@ const colors = {
   static: "#000",
   kinematic: "#000",
   selected: "#367beb", // Color for selected objects
+  rotationHandle: "#F04747", // Color for rotation handle
 };
+
+// Constants for rotation handle
+const ROTATION_HANDLE_RADIUS = 0.15; // Size of the handle in meters
+const ROTATION_HANDLE_DISTANCE = 1.2; // Distance from center in meters
+const ROTATION_HANDLE_HIT_RADIUS = 0.2; // Clickable area in meters
 
 export default function PhysicsRenderer(props: PhysicsRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,6 +36,10 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
   const mouseBodyRef = useRef<p2.Body | null>(null);
   const selectedBodyRef = useRef<p2.Body | null>(null);
   const isDraggingRef = useRef<boolean>(false);
+
+  // Rotation state
+  const isRotatingRef = useRef<boolean>(false);
+  const rotationStartAngleRef = useRef<number>(0);
 
   // Fixed timestep for physics simulation
   const fixedTimeStep = 1 / 60; // 60 fps
@@ -62,6 +75,36 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     return null;
   };
 
+  // Check if a point is near the rotation handle
+  const isNearRotationHandle = (worldPoint: [number, number]): boolean => {
+    if (!selectedBodyRef.current) return false;
+
+    const body = selectedBodyRef.current;
+
+    // Calculate handle position in world coordinates
+    const handleX =
+      body.position[0] + Math.cos(body.angle) * ROTATION_HANDLE_DISTANCE;
+    const handleY =
+      body.position[1] + Math.sin(body.angle) * ROTATION_HANDLE_DISTANCE;
+
+    // Calculate distance between point and handle
+    const dx = worldPoint[0] - handleX;
+    const dy = worldPoint[1] - handleY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    return distance <= ROTATION_HANDLE_HIT_RADIUS;
+  };
+
+  // Calculate angle between body center and point
+  const calculateAngle = (
+    bodyPosition: [number, number],
+    point: [number, number]
+  ): number => {
+    const dx = point[0] - bodyPosition[0];
+    const dy = point[1] - bodyPosition[1];
+    return Math.atan2(dy, dx);
+  };
+
   // Setup mouse interaction physics
   const initMouseInteraction = () => {
     if (!props.worldRef.current) return;
@@ -75,10 +118,24 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     mouseBodyRef.current = mouseBody;
   };
 
-  // Then in the component, update the startDrag function:
-  const startDrag = (worldPoint: [number, number]) => {
+  // Start drag or rotation
+  const startInteraction = (worldPoint: [number, number]) => {
     if (!props.worldRef.current || !mouseBodyRef.current) return;
 
+    // First check if we're near the rotation handle
+    if (selectedBodyRef.current && isNearRotationHandle(worldPoint)) {
+      // Start rotation mode
+      isRotatingRef.current = true;
+
+      // Notify parent component about rotation start
+      if (props.onRotationStart) {
+        props.onRotationStart(selectedBodyRef.current);
+      }
+
+      return;
+    }
+
+    // Otherwise check for body selection/dragging
     const hitBody = getBodyAtPoint(worldPoint);
 
     if (hitBody && hitBody.type !== p2.Body.STATIC) {
@@ -104,26 +161,59 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
       props.worldRef.current.addConstraint(constraint);
       mouseConstraintRef.current = constraint;
+    } else if (!hitBody) {
+      // Clicked on empty space, deselect
+      selectedBodyRef.current = null;
+      if (props.onObjectSelected) {
+        props.onObjectSelected(null);
+      }
     }
   };
 
-  // Update dragging
-  const updateDrag = (worldPoint: [number, number]) => {
-    if (isDraggingRef.current && mouseBodyRef.current) {
+  // Update dragging or rotation
+  const updateInteraction = (worldPoint: [number, number]) => {
+    if (isRotatingRef.current && selectedBodyRef.current) {
+      // We're in rotation mode
+      const body = selectedBodyRef.current;
+
+      // Calculate new angle based on mouse position relative to body center
+      const newAngle = calculateAngle(
+        body.position as [number, number],
+        worldPoint
+      );
+
+      // Apply the rotation
+      body.angle = newAngle;
+      body.angularVelocity = 0; // Stop any existing rotation
+
+      // Notify parent component about rotation
+      if (props.onRotation) {
+        props.onRotation(body, newAngle);
+      }
+    } else if (isDraggingRef.current && mouseBodyRef.current) {
+      // Regular dragging mode
       mouseBodyRef.current.position = worldPoint;
     }
   };
 
-  // End dragging
-  const endDrag = () => {
-    if (
+  // End dragging or rotation
+  const endInteraction = () => {
+    if (isRotatingRef.current && selectedBodyRef.current) {
+      // End rotation mode
+      isRotatingRef.current = false;
+
+      // Notify parent component
+      if (props.onRotationEnd) {
+        props.onRotationEnd(selectedBodyRef.current);
+      }
+    } else if (
       isDraggingRef.current &&
       props.worldRef.current &&
       mouseConstraintRef.current
     ) {
+      // End dragging mode
       props.worldRef.current.removeConstraint(mouseConstraintRef.current);
       mouseConstraintRef.current = null;
-      selectedBodyRef.current = null;
       isDraggingRef.current = false;
     }
   };
@@ -218,6 +308,43 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       ctx.restore();
     });
 
+    // Draw rotation handle for selected body
+    if (selectedBodyRef.current) {
+      const body = selectedBodyRef.current;
+      const bodyX = body.position[0];
+      const bodyY = body.position[1];
+
+      // Calculate handle position
+      const handleX = bodyX + Math.cos(body.angle) * ROTATION_HANDLE_DISTANCE;
+      const handleY = bodyY + Math.sin(body.angle) * ROTATION_HANDLE_DISTANCE;
+
+      // Draw line from body center to handle
+      ctx.beginPath();
+      ctx.moveTo(bodyX, bodyY);
+      ctx.lineTo(handleX, handleY);
+      ctx.strokeStyle = colors.rotationHandle;
+      ctx.lineWidth = 0.02;
+      ctx.stroke();
+
+      // Draw dotted circle to indicate rotation path
+      ctx.beginPath();
+      ctx.arc(bodyX, bodyY, ROTATION_HANDLE_DISTANCE, 0, 2 * Math.PI);
+      ctx.setLineDash([0.1, 0.1]);
+      ctx.strokeStyle = "rgba(150, 150, 150, 0.5)";
+      ctx.lineWidth = 0.01;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw rotation handle
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, ROTATION_HANDLE_RADIUS, 0, 2 * Math.PI);
+      ctx.fillStyle = colors.rotationHandle;
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 0.02;
+      ctx.stroke();
+    }
+
     // Draw constraint if dragging
     if (
       isDraggingRef.current &&
@@ -285,16 +412,16 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       // Set up mouse event listeners
       const handleMouseDown = (e: MouseEvent) => {
         const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
-        startDrag(worldPoint);
+        startInteraction(worldPoint);
       };
 
       const handleMouseMove = (e: MouseEvent) => {
         const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
-        updateDrag(worldPoint);
+        updateInteraction(worldPoint);
       };
 
       const handleMouseUp = () => {
-        endDrag();
+        endInteraction();
       };
 
       // Add touch support for mobile
@@ -302,7 +429,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         if (e.touches.length > 0) {
           const touch = e.touches[0];
           const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
-          startDrag(worldPoint);
+          startInteraction(worldPoint);
           e.preventDefault();
         }
       };
@@ -311,13 +438,13 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         if (e.touches.length > 0) {
           const touch = e.touches[0];
           const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
-          updateDrag(worldPoint);
+          updateInteraction(worldPoint);
           e.preventDefault();
         }
       };
 
       const handleTouchEnd = (e: TouchEvent) => {
-        endDrag();
+        endInteraction();
         e.preventDefault();
       };
 

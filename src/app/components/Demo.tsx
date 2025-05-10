@@ -3,7 +3,6 @@ import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
 import LETTERS from "../letters";
-import CircularAnglePicker from "./AnglePicker";
 
 const createWorld = (canvasWidthMeters: number) => {
   // Create new physics world with gravity
@@ -22,35 +21,28 @@ const createWorld = (canvasWidthMeters: number) => {
 
   createLetterFromPoints(
     LETTERS.A as IPoints,
-    [canvasWidthMeters / 8, 6],
+    [canvasWidthMeters / 2, 2],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.B as IPoints,
-    [2 * (canvasWidthMeters / 8), 6],
+    [canvasWidthMeters / 2, 3],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.C as IPoints,
-    [3 * (canvasWidthMeters / 8), 6],
+    [canvasWidthMeters / 2, 4],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.D as IPoints,
-    [4 * (canvasWidthMeters / 8), 6],
-    newWorld,
-    true
-  );
-
-  createLetterFromPoints(
-    LETTERS.E as IPoints,
-    [5 * (canvasWidthMeters / 8), 6],
+    [canvasWidthMeters / 2, 5],
     newWorld,
     true
   );
@@ -70,10 +62,6 @@ export default function Demo() {
   );
   // Reference to track the last selected body
   const lastSelectedBodyRef = useRef<p2.Body | null>(null);
-  // State to track if we're actively rotating (slider is being interacted with)
-  const [isRotating, setIsRotating] = useState(false);
-  // State to track the current angle for the slider
-  const [currentAngle, setCurrentAngle] = useState(0);
   // Store original body type when switching to kinematic
   const originalBodyTypeRef = useRef<
     | typeof p2.Body.DYNAMIC
@@ -82,49 +70,36 @@ export default function Demo() {
     | null
   >(null);
 
-  // Convert radians to degrees for the slider
-  const radiansToDegrees = (rad: number) => Math.round((rad * 180) / Math.PI);
-  // Convert degrees to radians for p2.js
-  const degreesToRadians = (deg: number) => (deg * Math.PI) / 180;
-
-  // Update the angle state when a new body is selected
+  // Update the selected body
   const updateSelectedBody = (body: p2.Body | null) => {
     lastSelectedBodyRef.current = body;
     if (body) {
       setLastSelectedBodyId(body.id);
-      // Update the slider value to match the body's current angle
-      setCurrentAngle(radiansToDegrees(body.angle));
+    } else {
+      setLastSelectedBodyId(null);
     }
   };
 
-  // Start rotation mode
-  const startRotation = () => {
-    const body = lastSelectedBodyRef.current;
+  // Handle rotation start
+  const handleRotationStart = (body: p2.Body) => {
     if (body && body.type !== p2.Body.STATIC) {
       originalBodyTypeRef.current = body.type;
       body.type = p2.Body.KINEMATIC;
-      setIsRotating(true);
     }
   };
 
-  // Apply rotation based on slider value
-  const updateRotation = (degrees: number) => {
-    const body = lastSelectedBodyRef.current;
-    if (body && isRotating) {
-      const radians = degreesToRadians(degrees);
-      body.angle = radians;
+  // Handle rotation update
+  const handleRotation = (body: p2.Body, angle: number) => {
+    if (body) {
       body.angularVelocity = 0; // Prevent continued rotation
-      setCurrentAngle(degrees);
     }
   };
 
-  // End rotation mode
-  const endRotation = () => {
-    const body = lastSelectedBodyRef.current;
-    if (body && isRotating && originalBodyTypeRef.current !== null) {
+  // Handle rotation end
+  const handleRotationEnd = (body: p2.Body) => {
+    if (body && originalBodyTypeRef.current !== null) {
       body.type = originalBodyTypeRef.current;
       originalBodyTypeRef.current = null;
-      setIsRotating(false);
     }
   };
 
@@ -144,23 +119,12 @@ export default function Demo() {
         height={CANVAS_HEIGHT}
         pixelsPerMeter={PIXELS_PER_METER}
         onObjectSelected={updateSelectedBody}
+        onRotationStart={handleRotationStart}
+        onRotation={handleRotation}
+        onRotationEnd={handleRotationEnd}
       />
 
       <div className="controls">
-        <div className="rotation-control">
-          <div>
-            <CircularAnglePicker
-              angle={currentAngle}
-              disabled={!lastSelectedBodyId}
-              size={100}
-              onChange={(angle) => updateRotation(angle)}
-              onChangeStart={startRotation}
-              onChangeEnd={endRotation}
-              primaryColor="#367beb"
-              secondaryColor="#aaa"
-            />
-          </div>
-        </div>
         <button onClick={addGravity}>Gravity</button>
       </div>
     </div>

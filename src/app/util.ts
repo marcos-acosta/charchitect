@@ -18,7 +18,7 @@ export const createLetterFromPoints = (
   position: IPoint,
   world: p2.World,
   stiff = false,
-  normalizeFactor = 1500
+  normalizeFactor = 2000
 ) => {
   const concaveBody = new p2.Body({
     mass: 15,

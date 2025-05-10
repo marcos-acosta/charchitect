@@ -4,7 +4,7 @@ import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
 import LETTERS from "../letters";
 
-const createWorld = (canvasWidthMeters: number) => {
+const createWorld = (canvasWidthMeters: number, canvasHeightMeters: number) => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
     gravity: [0, 0],
@@ -21,28 +21,42 @@ const createWorld = (canvasWidthMeters: number) => {
 
   createLetterFromPoints(
     LETTERS.A as IPoints,
-    [canvasWidthMeters / 2, 2],
+    [1 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.B as IPoints,
-    [canvasWidthMeters / 2, 3],
+    [2 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.C as IPoints,
-    [canvasWidthMeters / 2, 4],
+    [3 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
     newWorld,
     true
   );
 
   createLetterFromPoints(
     LETTERS.D as IPoints,
-    [canvasWidthMeters / 2, 5],
+    [4 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
+    newWorld,
+    true
+  );
+
+  createLetterFromPoints(
+    LETTERS.E as IPoints,
+    [5 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
+    newWorld,
+    true
+  );
+
+  createLetterFromPoints(
+    LETTERS.F as IPoints,
+    [6 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
     newWorld,
     true
   );
@@ -55,7 +69,12 @@ const CANVAS_HEIGHT = 600;
 const PIXELS_PER_METER = 80;
 
 export default function Demo() {
-  const worldRef = useRef(createWorld(CANVAS_WIDTH / PIXELS_PER_METER));
+  const worldRef = useRef(
+    createWorld(
+      CANVAS_WIDTH / PIXELS_PER_METER,
+      CANVAS_HEIGHT / PIXELS_PER_METER
+    )
+  );
   // Add state to track if we have a selected body (for UI rendering)
   const [lastSelectedBodyId, setLastSelectedBodyId] = useState<number | null>(
     null

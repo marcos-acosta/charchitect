@@ -17,13 +17,13 @@ const colors = {
   dynamic: "#000",
   static: "#000",
   kinematic: "#000",
-  selected: "#367beb", // Color for selected objects
+  selected: "#F04747", // Color for selected objects
   rotationHandle: "#F04747", // Color for rotation handle
 };
 
 // Constants for rotation handle
-const ROTATION_HANDLE_RADIUS = 0.15; // Size of the handle in meters
-const ROTATION_HANDLE_DISTANCE = 1.2; // Distance from center in meters
+const ROTATION_HANDLE_RADIUS = 0.1; // Size of the handle in meters
+const ROTATION_HANDLE_DISTANCE = 0.8; // Distance from center in meters
 const ROTATION_HANDLE_HIT_RADIUS = 0.2; // Clickable area in meters
 
 export default function PhysicsRenderer(props: PhysicsRendererProps) {
@@ -346,24 +346,24 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     }
 
     // Draw constraint if dragging
-    if (
-      isDraggingRef.current &&
-      mouseBodyRef.current &&
-      selectedBodyRef.current
-    ) {
-      ctx.beginPath();
-      ctx.moveTo(
-        mouseBodyRef.current.position[0],
-        mouseBodyRef.current.position[1]
-      );
-      ctx.lineTo(
-        selectedBodyRef.current.position[0],
-        selectedBodyRef.current.position[1]
-      );
-      ctx.strokeStyle = "#f39c12";
-      ctx.lineWidth = 0.03;
-      ctx.stroke();
-    }
+    // if (
+    //   isDraggingRef.current &&
+    //   mouseBodyRef.current &&
+    //   selectedBodyRef.current
+    // ) {
+    //   ctx.beginPath();
+    //   ctx.moveTo(
+    //     mouseBodyRef.current.position[0],
+    //     mouseBodyRef.current.position[1]
+    //   );
+    //   ctx.lineTo(
+    //     selectedBodyRef.current.position[0],
+    //     selectedBodyRef.current.position[1]
+    //   );
+    //   ctx.strokeStyle = "#f39c12";
+    //   ctx.lineWidth = 0.03;
+    //   ctx.stroke();
+    // }
 
     ctx.restore();
   };

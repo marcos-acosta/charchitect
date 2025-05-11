@@ -452,9 +452,9 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     // Set up canvas and start animation loop
     const canvas = canvasRef.current;
     if (canvas) {
-      // // Scale the CSS size
-      // canvas.style.width = `${props.width}px`;
-      // canvas.style.height = `${props.height}px`;
+      // Scale the CSS size
+      canvas.style.width = `${props.width}px`;
+      canvas.style.height = `${props.height}px`;
 
       // Initialize mouse physics body (only for interactive mode)
       if (!props.readOnly) {

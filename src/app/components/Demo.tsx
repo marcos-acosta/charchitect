@@ -3,6 +3,7 @@ import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
 import LETTERS from "../letters";
+import styles from "./../styles.module.css";
 
 const createWorld = (
   canvasWidthMeters: number,
@@ -224,49 +225,42 @@ export default function Demo() {
   };
 
   return (
-    <div className="physics-container" style={{ display: "flex" }}>
-      <div className="controls" style={{ width: "60px", marginRight: "10px" }}>
-        <button
-          onClick={runSimulation}
-          style={{
-            width: "100%",
-            padding: "8px",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginBottom: "10px",
-          }}
-        >
-          Run
-        </button>
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <h3 style={{ textAlign: "center", margin: "0 0 10px" }}>Sandbox</h3>
-        <PhysicsRenderer
-          worldRef={sandboxWorldRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          pixelsPerMeter={PIXELS_PER_METER}
-          onRotationStart={handleRotationStart}
-          onRotation={handleRotation}
-          onRotationEnd={handleRotationEnd}
-        />
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <h3 style={{ textAlign: "center", margin: "0 0 10px" }}>Trial</h3>
-        <PhysicsRenderer
-          worldRef={trialWorldRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          pixelsPerMeter={PIXELS_PER_METER}
-          readOnly={true} // Make trial canvas read-only
-          highestPoint={highestPointRef} // Pass the highest point
-          onAfterStep={updateHighestPoint} // Calculate after each physics step
-        />
+    <div className={styles.pageOuterContainer}>
+      <div className={styles.coreGameContainer}>
+        <div className={styles.letterSelectorAndCanvasesContainer}>
+          <div className={styles.letterSelectionContainer}>
+            Letters go here...
+          </div>
+          <div className={styles.canvasesAndControls}>
+            <div className={styles.controlsContainer}>
+              <button onClick={runSimulation} className={styles.controlsButton}>
+                run [r]
+              </button>
+            </div>
+            <div className={styles.canvasContainer}>
+              <PhysicsRenderer
+                worldRef={sandboxWorldRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                pixelsPerMeter={PIXELS_PER_METER}
+                onRotationStart={handleRotationStart}
+                onRotation={handleRotation}
+                onRotationEnd={handleRotationEnd}
+              />
+            </div>
+            <div className={styles.canvasContainer}>
+              <PhysicsRenderer
+                worldRef={trialWorldRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                pixelsPerMeter={PIXELS_PER_METER}
+                readOnly={true} // Make trial canvas read-only
+                highestPoint={highestPointRef} // Pass the highest point
+                onAfterStep={updateHighestPoint} // Calculate after each physics step
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

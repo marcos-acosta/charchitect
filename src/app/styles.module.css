@@ -1,3 +1,53 @@
-.canvas {
-  border: 1px solid black;
+.pageOuterContainer {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coreGameContainer {
+  width: 95%;
+  height: 95%;
+  /* background-color: bisque; */
+}
+
+.letterSelectorAndCanvasesContainer {
+  display: flex;
+  flex-direction: column;
+  /* background-color: aquamarine; */
+  height: 100%;
+}
+
+.letterSelectionContainer {
+  padding: 10px;
+}
+
+.canvasesAndControls {
+  display: grid;
+  grid-template-columns: 100px 1fr 1fr;
+  /* background-color: beige; */
+  flex-grow: 1;
+}
+
+.controlsContainer {
+  /* background-color: aliceblue; */
+  padding-right: 10px;
+}
+
+/* .canvasContainer {
+  background-color: salmon;
+} */
+
+.controlsButton {
+  display: flex;
+  width: 100%;
+  background-color: var(--foreground);
+  border: none;
+  color: var(--background);
+  font-family: monospace;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }

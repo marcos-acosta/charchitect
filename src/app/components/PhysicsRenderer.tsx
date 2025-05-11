@@ -11,6 +11,8 @@ interface PhysicsRendererProps {
   onRotationStart?: (body: p2.Body) => void;
   onRotation?: (body: p2.Body, angle: number) => void;
   onRotationEnd?: (body: p2.Body) => void;
+  highestPoint?: RefObject<number>; // Optional highest point to display
+  onAfterStep?: () => void; // Callback after each physics step
 }
 
 // Colors for different body types
@@ -235,6 +237,23 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     ctx.translate(0, props.height);
     ctx.scale(props.pixelsPerMeter, -props.pixelsPerMeter);
 
+    // Draw highest point line if provided
+    if (props.highestPoint && props.highestPoint.current > 0) {
+      // console.log("here!", props.highestPoint);
+      ctx.save();
+      // Convert highest point to canvas coordinates
+      const lineY = props.highestPoint.current;
+
+      ctx.beginPath();
+      ctx.moveTo(0, lineY);
+      ctx.lineTo(props.width / props.pixelsPerMeter, lineY);
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 0.02;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
     props.worldRef.current.bodies.forEach((body) => {
       // Skip drawing the mouse body
       if (mouseBodyRef.current && body === mouseBodyRef.current) return;
@@ -360,9 +379,6 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
   // Animation loop using requestAnimationFrame
   const animate = (time: number) => {
-    // if (!props.readOnly) {
-    //   console.log("Here!");
-    // }
     if (previousTimeRef.current === null) {
       previousTimeRef.current = time;
     }
@@ -374,6 +390,11 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     // Step the physics world forward
     if (props.worldRef.current) {
       props.worldRef.current.step(fixedTimeStep, deltaTime, maxSubSteps);
+
+      // Call onAfterStep callback if provided
+      if (props.onAfterStep) {
+        props.onAfterStep();
+      }
     }
 
     // Draw the updated world
@@ -439,11 +460,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       if (!props.readOnly) {
         initMouseInteraction();
       }
-      // if (!props.readOnly) {
-      //   console.log("In useeffect!");
-      // }
 
-      // Only add event listeners if not in readOnly mode
       if (!props.readOnly) {
         // Add event listeners
         canvas.addEventListener("mousedown", handleMouseDown);
@@ -455,10 +472,6 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         window.addEventListener("touchmove", handleTouchMove);
         window.addEventListener("touchend", handleTouchEnd);
       }
-
-      // if (!props.readOnly) {
-      //   console.log("Still here!");
-      // }
 
       // Start the animation loop (for both interactive and read-only)
       requestRef.current = requestAnimationFrame(animate);

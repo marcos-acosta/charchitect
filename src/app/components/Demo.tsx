@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
@@ -143,6 +143,8 @@ export default function Demo() {
     | null
   >(null);
 
+  const highestPointRef = useRef<number>(0);
+
   // Handle rotation start
   const handleRotationStart = (body: p2.Body) => {
     if (body && body.type !== p2.Body.STATIC) {
@@ -166,6 +168,32 @@ export default function Demo() {
     }
   };
 
+  const updateHighestPoint = () => {
+    const trialWorld = trialWorldRef.current;
+    if (!trialWorld || trialWorld.bodies.length <= 1) {
+      // Only ground body or no bodies
+      highestPointRef.current = 0;
+      return;
+    }
+
+    let highestPoint = 0;
+    trialWorld.bodies.forEach((body) => {
+      // Skip ground body
+      if (body.type === p2.Body.STATIC) {
+        return;
+      }
+
+      // Find the highest point of this body
+      body.updateAABB();
+      const bodyHeight = body.aabb.upperBound[1];
+      if (bodyHeight > highestPoint) {
+        highestPoint = bodyHeight;
+      }
+    });
+
+    highestPointRef.current = highestPoint;
+  };
+
   // Copy the sandbox world to the trial world
   const runSimulation = () => {
     const sandboxWorld = sandboxWorldRef.current;
@@ -178,10 +206,7 @@ export default function Demo() {
     for (let i = 0; i < trialWorld.bodies.length; i++) {
       const body = trialWorld.bodies[i];
       // Skip ground body
-      if (
-        body.type === p2.Body.STATIC &&
-        body.shapes.some((s) => s instanceof p2.Box && (s as p2.Box).width > 10)
-      ) {
+      if (body.type === p2.Body.STATIC) {
         continue;
       }
       bodiesToRemove.push(body);
@@ -239,6 +264,8 @@ export default function Demo() {
           height={CANVAS_HEIGHT}
           pixelsPerMeter={PIXELS_PER_METER}
           readOnly={true} // Make trial canvas read-only
+          highestPoint={highestPointRef} // Pass the highest point
+          onAfterStep={updateHighestPoint} // Calculate after each physics step
         />
       </div>
     </div>

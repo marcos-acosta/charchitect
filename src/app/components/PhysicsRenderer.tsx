@@ -495,7 +495,8 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       ref={canvasRef}
       style={{
         display: "block",
-        background: "#f8f9fa",
+        background: "#fff",
+        border: "1px solid black",
       }}
       width={props.width}
       height={props.height}

@@ -24,12 +24,15 @@ const createWorld = (
   groundBody.addShape(groundShape);
   newWorld.addBody(groundBody);
 
+  const woodMaterial = new p2.Material();
+
   // Only add initial letters if requested
   if (!trialCanvas) {
     createLetterFromPoints(
       LETTERS.A as IPoints,
       [1 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
+      woodMaterial,
       true
     );
 
@@ -37,6 +40,7 @@ const createWorld = (
       LETTERS.B as IPoints,
       [2 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
+      woodMaterial,
       true
     );
 
@@ -44,6 +48,7 @@ const createWorld = (
       LETTERS.C as IPoints,
       [3 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
+      woodMaterial,
       true
     );
 
@@ -51,6 +56,7 @@ const createWorld = (
       LETTERS.D as IPoints,
       [4 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
+      woodMaterial,
       true
     );
 
@@ -58,6 +64,7 @@ const createWorld = (
       LETTERS.E as IPoints,
       [5 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
+      woodMaterial,
       true
     );
 
@@ -65,9 +72,20 @@ const createWorld = (
       LETTERS.F as IPoints,
       [6 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
+      woodMaterial,
       true
     );
   }
+
+  const frictionContactMaterial = new p2.ContactMaterial(
+    woodMaterial,
+    woodMaterial,
+    {
+      friction: 10,
+      stiffness: Math.max(),
+    }
+  );
+  newWorld.addContactMaterial(frictionContactMaterial);
 
   return newWorld;
 };

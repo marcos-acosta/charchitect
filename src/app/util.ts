@@ -17,6 +17,7 @@ export const createLetterFromPoints = (
   points: IPoints,
   position: IPoint,
   world: p2.World,
+  material: p2.Material,
   stiff = false,
   normalizeFactor = 2000
 ) => {
@@ -28,5 +29,6 @@ export const createLetterFromPoints = (
   });
   const letterPath = normalizePoints(points, normalizeFactor);
   concaveBody.fromPolygon(letterPath);
+  concaveBody.shapes.forEach((shape) => (shape.material = material));
   world.addBody(concaveBody);
 };

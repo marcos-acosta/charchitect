@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
 import { createLetterFromPoints, IPoints } from "../util";
@@ -126,7 +126,6 @@ export default function Demo() {
       false
     )
   );
-
   // Create trial world (right side - read-only with gravity)
   const trialWorldRef = useRef(
     createWorld(
@@ -135,7 +134,6 @@ export default function Demo() {
       true
     )
   );
-
   // Store original body type when switching to kinematic
   const originalBodyTypeRef = useRef<
     | typeof p2.Body.DYNAMIC
@@ -143,8 +141,39 @@ export default function Demo() {
     | typeof p2.Body.KINEMATIC
     | null
   >(null);
-
+  // Track the highest point in the trial world
   const highestPointRef = useRef<number>(0);
+  // Canvas container dimensions
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const [canvasContainerDimensions, setCanvasContainerDimensions] = useState({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+  });
+
+  // Function to measure container and update dimensions
+  const updateDimensions = () => {
+    if (!canvasContainerRef.current) return;
+
+    const { width, height } =
+      canvasContainerRef.current.getBoundingClientRect();
+    setCanvasContainerDimensions({
+      width: Math.floor(width),
+      height: Math.floor(height),
+    });
+  };
+
+  useEffect(() => {
+    if (!canvasContainerRef.current) return;
+
+    // Initial size measurement
+    updateDimensions();
+
+    // Set up resize observer
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(canvasContainerRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Handle rotation start
   const handleRotationStart = (body: p2.Body) => {
@@ -237,11 +266,11 @@ export default function Demo() {
                 run [r]
               </button>
             </div>
-            <div className={styles.canvasContainer}>
+            <div className={styles.canvasContainer} ref={canvasContainerRef}>
               <PhysicsRenderer
                 worldRef={sandboxWorldRef}
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
+                width={canvasContainerDimensions.width - 10}
+                height={canvasContainerDimensions.height - 10}
                 pixelsPerMeter={PIXELS_PER_METER}
                 onRotationStart={handleRotationStart}
                 onRotation={handleRotation}
@@ -251,8 +280,8 @@ export default function Demo() {
             <div className={styles.canvasContainer}>
               <PhysicsRenderer
                 worldRef={trialWorldRef}
-                width={CANVAS_WIDTH}
-                height={CANVAS_HEIGHT}
+                width={canvasContainerDimensions.width - 10}
+                height={canvasContainerDimensions.height - 10}
                 pixelsPerMeter={PIXELS_PER_METER}
                 readOnly={true} // Make trial canvas read-only
                 highestPoint={highestPointRef} // Pass the highest point

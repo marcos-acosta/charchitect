@@ -35,9 +35,11 @@
   padding-right: 10px;
 }
 
-/* .canvasContainer {
-  background-color: salmon;
-} */
+.canvasContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .controlsButton {
   display: flex;

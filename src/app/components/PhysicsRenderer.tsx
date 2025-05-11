@@ -6,6 +6,7 @@ interface PhysicsRendererProps {
   width: number;
   height: number;
   pixelsPerMeter: number;
+  readOnly?: boolean; // New prop to control if canvas is interactive
   onObjectSelected?: (body: p2.Body | null) => void;
   onRotationStart?: (body: p2.Body) => void;
   onRotation?: (body: p2.Body, angle: number) => void;
@@ -107,7 +108,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
   // Setup mouse interaction physics
   const initMouseInteraction = () => {
-    if (!props.worldRef.current) return;
+    if (!props.worldRef.current || props.readOnly) return;
 
     // Create a body for the mouse cursor
     const mouseBody = new p2.Body({
@@ -120,6 +121,9 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
   // Start drag or rotation
   const startInteraction = (worldPoint: [number, number]) => {
+    // If readOnly, do nothing
+    if (props.readOnly) return;
+
     if (!props.worldRef.current || !mouseBodyRef.current) return;
 
     // First check if we're near the rotation handle
@@ -172,6 +176,9 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
   // Update dragging or rotation
   const updateInteraction = (worldPoint: [number, number]) => {
+    // If readOnly, do nothing
+    if (props.readOnly) return;
+
     if (isRotatingRef.current && selectedBodyRef.current) {
       // We're in rotation mode
       const body = selectedBodyRef.current;
@@ -198,6 +205,9 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
   // End dragging or rotation
   const endInteraction = () => {
+    // If readOnly, do nothing
+    if (props.readOnly) return;
+
     if (isRotatingRef.current && selectedBodyRef.current) {
       // End rotation mode
       isRotatingRef.current = false;
@@ -235,7 +245,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
       // Determine color based on body type and selection state
       let color;
-      if (selectedBodyRef.current === body) {
+      if (!props.readOnly && selectedBodyRef.current === body) {
         color = colors.selected; // Highlight selected body
       } else if (body.type === p2.Body.STATIC) {
         color = colors.static;
@@ -308,8 +318,8 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       ctx.restore();
     });
 
-    // Draw rotation handle for selected body
-    if (selectedBodyRef.current) {
+    // Only draw rotation handle in interactive mode (not readOnly)
+    if (!props.readOnly && selectedBodyRef.current) {
       const body = selectedBodyRef.current;
       const bodyX = body.position[0];
       const bodyY = body.position[1];
@@ -345,31 +355,14 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       ctx.stroke();
     }
 
-    // Draw constraint if dragging
-    // if (
-    //   isDraggingRef.current &&
-    //   mouseBodyRef.current &&
-    //   selectedBodyRef.current
-    // ) {
-    //   ctx.beginPath();
-    //   ctx.moveTo(
-    //     mouseBodyRef.current.position[0],
-    //     mouseBodyRef.current.position[1]
-    //   );
-    //   ctx.lineTo(
-    //     selectedBodyRef.current.position[0],
-    //     selectedBodyRef.current.position[1]
-    //   );
-    //   ctx.strokeStyle = "#f39c12";
-    //   ctx.lineWidth = 0.03;
-    //   ctx.stroke();
-    // }
-
     ctx.restore();
   };
 
   // Animation loop using requestAnimationFrame
   const animate = (time: number) => {
+    // if (!props.readOnly) {
+    //   console.log("Here!");
+    // }
     if (previousTimeRef.current === null) {
       previousTimeRef.current = time;
     }
@@ -396,78 +389,86 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
     requestRef.current = requestAnimationFrame(animate);
   };
 
+  const handleMouseDown = (e: MouseEvent) => {
+    const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
+    startInteraction(worldPoint);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
+    updateInteraction(worldPoint);
+  };
+
+  const handleMouseUp = () => {
+    endInteraction();
+  };
+
+  // Add touch support for mobile
+  const handleTouchStart = (e: TouchEvent) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
+      startInteraction(worldPoint);
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
+      updateInteraction(worldPoint);
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = (e: TouchEvent) => {
+    endInteraction();
+    e.preventDefault();
+  };
+
   useEffect(() => {
     // Set up canvas and start animation loop
     const canvas = canvasRef.current;
     if (canvas) {
-      // Set the canvas resolution correctly for high DPI displays
+      // // Scale the CSS size
+      // canvas.style.width = `${props.width}px`;
+      // canvas.style.height = `${props.height}px`;
 
-      // Scale the CSS size
-      canvas.style.width = `${props.width}px`;
-      canvas.style.height = `${props.height}px`;
+      // Initialize mouse physics body (only for interactive mode)
+      if (!props.readOnly) {
+        initMouseInteraction();
+      }
+      // if (!props.readOnly) {
+      //   console.log("In useeffect!");
+      // }
 
-      // Initialize mouse physics body
-      initMouseInteraction();
+      // Only add event listeners if not in readOnly mode
+      if (!props.readOnly) {
+        // Add event listeners
+        canvas.addEventListener("mousedown", handleMouseDown);
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
 
-      // Set up mouse event listeners
-      const handleMouseDown = (e: MouseEvent) => {
-        const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
-        startInteraction(worldPoint);
-      };
+        // Touch events
+        canvas.addEventListener("touchstart", handleTouchStart);
+        window.addEventListener("touchmove", handleTouchMove);
+        window.addEventListener("touchend", handleTouchEnd);
+      }
 
-      const handleMouseMove = (e: MouseEvent) => {
-        const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
-        updateInteraction(worldPoint);
-      };
+      // if (!props.readOnly) {
+      //   console.log("Still here!");
+      // }
 
-      const handleMouseUp = () => {
-        endInteraction();
-      };
-
-      // Add touch support for mobile
-      const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length > 0) {
-          const touch = e.touches[0];
-          const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
-          startInteraction(worldPoint);
-          e.preventDefault();
-        }
-      };
-
-      const handleTouchMove = (e: TouchEvent) => {
-        if (e.touches.length > 0) {
-          const touch = e.touches[0];
-          const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
-          updateInteraction(worldPoint);
-          e.preventDefault();
-        }
-      };
-
-      const handleTouchEnd = (e: TouchEvent) => {
-        endInteraction();
-        e.preventDefault();
-      };
-
-      // Add event listeners
-      canvas.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-
-      // Touch events
-      canvas.addEventListener("touchstart", handleTouchStart);
-      window.addEventListener("touchmove", handleTouchMove);
-      window.addEventListener("touchend", handleTouchEnd);
-
-      // Start the animation loop
+      // Start the animation loop (for both interactive and read-only)
       requestRef.current = requestAnimationFrame(animate);
 
-      // Clean up
+      // Clean up animation and physics objects on unmount
       return () => {
         if (requestRef.current !== -1) {
           cancelAnimationFrame(requestRef.current);
         }
 
-        // Remove all event listeners
         canvas.removeEventListener("mousedown", handleMouseDown);
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
@@ -488,7 +489,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         }
       };
     }
-  }, [props.width, props.height]);
+  }, [props.width, props.height, props.readOnly]);
 
   return (
     <canvas
@@ -497,6 +498,8 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
         display: "block",
         background: "#fff",
         border: "1px solid black",
+        width: `${props.width}px`,
+        height: `${props.height}px`,
       }}
       width={props.width}
       height={props.height}

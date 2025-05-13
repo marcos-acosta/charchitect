@@ -1,3 +1,5 @@
+import { LETTERS } from "./interfaces";
+
 const LETTER_A = [
   [937, 454],
   [412, 454],
@@ -436,13 +438,13 @@ const LETTER_F = [
   [718, 1282],
 ];
 
-const LETTERS = {
-  A: LETTER_A,
-  B: LETTER_B,
-  C: LETTER_C,
-  D: LETTER_D,
-  E: LETTER_E,
-  F: LETTER_F,
+const LETTER_POLYGONS = {
+  [LETTERS.A]: LETTER_A,
+  [LETTERS.B]: LETTER_B,
+  [LETTERS.C]: LETTER_C,
+  [LETTERS.D]: LETTER_D,
+  [LETTERS.E]: LETTER_E,
+  [LETTERS.F]: LETTER_F,
 };
 
-export default LETTERS;
+export default LETTER_POLYGONS;

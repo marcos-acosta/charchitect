@@ -8,9 +8,10 @@ import {
   createLetterFromPoints,
   IPoints,
 } from "../util";
-import LETTERS from "../letters";
+import LETTER_POLYGONS from "../letters";
 import styles from "./../styles.module.css";
-import { IDimensions } from "../interfaces";
+import { IDimensions, LETTERS } from "../interfaces";
+import LetterButton from "./LetterButton";
 
 const CANVAS_WIDTH_METERS = 10;
 const DESIRED_LETTER_WIDTH_METERS = 1;
@@ -40,7 +41,7 @@ const createWorld = (
   // Add a ground plane
   const groundBody = new p2.Body({
     type: p2.Body.STATIC,
-    position: [canvasWidthMeters / 2, 0],
+    position: [canvasWidthMeters / 2, -0.25],
   });
   const groundShape = new p2.Box({ width: canvasWidthMeters, height: 1 });
   groundBody.addShape(groundShape);
@@ -51,53 +52,16 @@ const createWorld = (
   // Only add initial letters if requested
   if (!trialCanvas) {
     createLetterFromPoints(
-      LETTERS.A as IPoints,
-      [1 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
+      LETTER_POLYGONS[LETTERS.A] as IPoints,
+      [0.5, canvasHeightMeters / 2],
       newWorld,
       woodMaterial,
       true,
       scaling_ratio
     );
-
     createLetterFromPoints(
-      LETTERS.B as IPoints,
-      [2 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
-      newWorld,
-      woodMaterial,
-      true,
-      scaling_ratio
-    );
-
-    createLetterFromPoints(
-      LETTERS.C as IPoints,
-      [3 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
-      newWorld,
-      woodMaterial,
-      true,
-      scaling_ratio
-    );
-
-    createLetterFromPoints(
-      LETTERS.D as IPoints,
-      [4 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
-      newWorld,
-      woodMaterial,
-      true,
-      scaling_ratio
-    );
-
-    createLetterFromPoints(
-      LETTERS.E as IPoints,
-      [5 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
-      newWorld,
-      woodMaterial,
-      true,
-      scaling_ratio
-    );
-
-    createLetterFromPoints(
-      LETTERS.F as IPoints,
-      [6 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
+      LETTER_POLYGONS[LETTERS.B] as IPoints,
+      [0.5, canvasHeightMeters / 2 + 2],
       newWorld,
       woodMaterial,
       true,
@@ -177,6 +141,9 @@ export default function Demo() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
+  const [lettersUsed, setLettersUsed] = useState<Set<LETTERS>>(
+    new Set([LETTERS.A])
+  );
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -298,12 +265,20 @@ export default function Demo() {
       <div className={styles.coreGameContainer}>
         <div className={styles.letterSelectorAndCanvasesContainer}>
           <div className={styles.letterSelectionContainer}>
-            Letters go here...
+            {Object.values(LETTERS).map((letter) => (
+              <LetterButton
+                letter={letter}
+                used={lettersUsed.has(letter)}
+                onClick={() => {}}
+                key={letter}
+              />
+            ))}
           </div>
           <div className={styles.canvasesAndControls}>
             <div className={styles.controlsContainer}>
               <button onClick={runSimulation} className={styles.controlsButton}>
-                run [r]
+                <div className={styles.buttonText}>RUN TRIAL</div>
+                <div className={styles.shortcut}>[enter]</div>
               </button>
             </div>
             <div className={styles.canvasContainer} ref={canvasContainerRef}>

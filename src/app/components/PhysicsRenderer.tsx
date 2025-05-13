@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, RefObject, useState } from "react";
+import styles from "./../styles.module.css";
 import * as p2 from "p2-es";
 
 interface PhysicsRendererProps {
@@ -507,10 +508,8 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
   return (
     <canvas
       ref={canvasRef}
+      className={styles.canvas}
       style={{
-        display: "block",
-        background: "#fff",
-        border: "1px solid black",
         width: `${props.width}px`,
         height: `${props.height}px`,
       }}

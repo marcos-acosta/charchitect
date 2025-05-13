@@ -49,17 +49,17 @@ const createWorld = (
   groundBody.addShape(groundShape);
   newWorld.addBody(groundBody);
 
-  // Only add initial letters if requested
-  if (!trialCanvas) {
-    createLetterFromPoints(
-      LETTER_POLYGONS[LETTERS.A] as IPoints,
-      [0.5, canvasHeightMeters / 2],
-      newWorld,
-      WOOD_MATERIAL,
-      true,
-      scalingRatio
-    );
-  }
+  // // Only add initial letters if requested
+  // if (!trialCanvas) {
+  //   createLetterFromPoints(
+  //     LETTER_POLYGONS[LETTERS.A] as IPoints,
+  //     [0.5, canvasHeightMeters / 2],
+  //     newWorld,
+  //     WOOD_MATERIAL,
+  //     true,
+  //     scalingRatio
+  //   );
+  // }
 
   const frictionContactMaterial = new p2.ContactMaterial(
     WOOD_MATERIAL,
@@ -133,9 +133,7 @@ export default function Demo() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
-  const [lettersUsed, setLettersUsed] = useState<Set<LETTERS>>(
-    new Set([LETTERS.A])
-  );
+  const [lettersUsed, setLettersUsed] = useState<Set<LETTERS>>(new Set());
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -187,6 +185,22 @@ export default function Demo() {
     );
     setLettersUsed(new Set([...lettersUsed, letter]));
   };
+
+  const handleKeypress = (event: KeyboardEvent) => {
+    if (event.metaKey || event.altKey || event.ctrlKey) {
+      return;
+    }
+    const letter = event.key.toUpperCase();
+    if (Object.keys(LETTERS).includes(letter)) {
+      const letterEnum = LETTERS[letter as keyof typeof LETTERS];
+      addLetterToTrial(letterEnum);
+    }
+  };
+
+  useEffect(() => {
+    addEventListener("keydown", handleKeypress);
+    return () => removeEventListener("keydown", handleKeypress);
+  }, [sandboxWorldRef.current]);
 
   useEffect(() => {
     if (!canvasContainerRef.current) return;

@@ -26,14 +26,13 @@
 .canvasesAndControls {
   display: grid;
   grid-template-columns: 100px 1fr 1fr;
-  /* background-color: beige; */
   flex-grow: 1;
+  gap: 10px;
 }
 
-.controlsContainer {
-  /* background-color: aliceblue; */
+/* .controlsContainer {
   padding-right: 10px;
-}
+} */
 
 .canvasContainer {
   display: flex;

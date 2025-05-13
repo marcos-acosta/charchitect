@@ -1,15 +1,37 @@
-import { useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
-import { createLetterFromPoints, IPoints } from "../util";
+import {
+  AVG_LETTER_WIDTH_PIXELS,
+  computeMetersPerPixel,
+  computePixelsPerMeter,
+  createLetterFromPoints,
+  IPoints,
+} from "../util";
 import LETTERS from "../letters";
 import styles from "./../styles.module.css";
+import { IDimensions } from "../interfaces";
+
+const CANVAS_WIDTH_METERS = 10;
+const DESIRED_LETTER_WIDTH_METERS = 1;
 
 const createWorld = (
-  canvasWidthMeters: number,
-  canvasHeightMeters: number,
+  canvasWidthPixels: number,
+  canvasHeightPixels: number,
   trialCanvas = false
 ) => {
+  const canvasWidthMeters = CANVAS_WIDTH_METERS;
+  const metersPerPixel = computeMetersPerPixel(
+    canvasWidthPixels,
+    canvasWidthMeters
+  );
+  const canvasHeightMeters = canvasHeightPixels * metersPerPixel;
+
+  const average_letter_width_meters = AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
+  const scaling_ratio =
+    (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
+    metersPerPixel;
+
   // Create new physics world with gravity
   const newWorld = new p2.World({
     gravity: [0, trialCanvas ? -9.81 : 0],
@@ -33,7 +55,8 @@ const createWorld = (
       [1 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
       woodMaterial,
-      true
+      true,
+      scaling_ratio
     );
 
     createLetterFromPoints(
@@ -41,7 +64,8 @@ const createWorld = (
       [2 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
       woodMaterial,
-      true
+      true,
+      scaling_ratio
     );
 
     createLetterFromPoints(
@@ -49,7 +73,8 @@ const createWorld = (
       [3 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
       woodMaterial,
-      true
+      true,
+      scaling_ratio
     );
 
     createLetterFromPoints(
@@ -57,7 +82,8 @@ const createWorld = (
       [4 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
       woodMaterial,
-      true
+      true,
+      scaling_ratio
     );
 
     createLetterFromPoints(
@@ -65,7 +91,8 @@ const createWorld = (
       [5 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
       woodMaterial,
-      true
+      true,
+      scaling_ratio
     );
 
     createLetterFromPoints(
@@ -73,7 +100,8 @@ const createWorld = (
       [6 * (canvasWidthMeters / 8), canvasHeightMeters - 1],
       newWorld,
       woodMaterial,
-      true
+      true,
+      scaling_ratio
     );
   }
 
@@ -131,27 +159,11 @@ const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World): p2.Body => {
   return newBody;
 };
 
-const CANVAS_WIDTH = 600;
-const CANVAS_HEIGHT = 600;
-const PIXELS_PER_METER = 80;
-
 export default function Demo() {
   // Create sandbox world (left side - interactive)
-  const sandboxWorldRef = useRef(
-    createWorld(
-      CANVAS_WIDTH / PIXELS_PER_METER,
-      CANVAS_HEIGHT / PIXELS_PER_METER,
-      false
-    )
-  );
+  const sandboxWorldRef = useRef<p2.World | null>(null);
   // Create trial world (right side - read-only with gravity)
-  const trialWorldRef = useRef(
-    createWorld(
-      CANVAS_WIDTH / PIXELS_PER_METER,
-      CANVAS_HEIGHT / PIXELS_PER_METER,
-      true
-    )
-  );
+  const trialWorldRef = useRef<p2.World | null>(null);
   // Store original body type when switching to kinematic
   const originalBodyTypeRef = useRef<
     | typeof p2.Body.DYNAMIC
@@ -163,10 +175,15 @@ export default function Demo() {
   const highestPointRef = useRef<number>(0);
   // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const [canvasContainerDimensions, setCanvasContainerDimensions] = useState({
-    width: CANVAS_WIDTH,
-    height: CANVAS_HEIGHT,
-  });
+  const [canvasContainerDimensions, setCanvasContainerDimensions] =
+    useState<IDimensions | null>(null);
+
+  const pixelsPerMeter = canvasContainerDimensions
+    ? computePixelsPerMeter(
+        canvasContainerDimensions.width,
+        CANVAS_WIDTH_METERS
+      )
+    : undefined;
 
   // Function to measure container and update dimensions
   const updateDimensions = () => {
@@ -178,6 +195,11 @@ export default function Demo() {
       width: Math.floor(width),
       height: Math.floor(height),
     });
+
+    if (sandboxWorldRef.current === null) {
+      sandboxWorldRef.current = createWorld(width, height, false);
+      trialWorldRef.current = createWorld(width, height, true);
+    }
   };
 
   useEffect(() => {
@@ -191,7 +213,7 @@ export default function Demo() {
     resizeObserver.observe(canvasContainerRef.current);
 
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [canvasContainerRef.current]);
 
   // Handle rotation start
   const handleRotationStart = (body: p2.Body) => {
@@ -285,26 +307,34 @@ export default function Demo() {
               </button>
             </div>
             <div className={styles.canvasContainer} ref={canvasContainerRef}>
-              <PhysicsRenderer
-                worldRef={sandboxWorldRef}
-                width={canvasContainerDimensions.width - 10}
-                height={canvasContainerDimensions.height - 10}
-                pixelsPerMeter={PIXELS_PER_METER}
-                onRotationStart={handleRotationStart}
-                onRotation={handleRotation}
-                onRotationEnd={handleRotationEnd}
-              />
+              {sandboxWorldRef.current &&
+                canvasContainerDimensions &&
+                pixelsPerMeter && (
+                  <PhysicsRenderer
+                    worldRef={sandboxWorldRef as RefObject<p2.World>}
+                    width={canvasContainerDimensions?.width}
+                    height={canvasContainerDimensions?.height}
+                    pixelsPerMeter={pixelsPerMeter}
+                    onRotationStart={handleRotationStart}
+                    onRotation={handleRotation}
+                    onRotationEnd={handleRotationEnd}
+                  />
+                )}
             </div>
             <div className={styles.canvasContainer}>
-              <PhysicsRenderer
-                worldRef={trialWorldRef}
-                width={canvasContainerDimensions.width - 10}
-                height={canvasContainerDimensions.height - 10}
-                pixelsPerMeter={PIXELS_PER_METER}
-                readOnly={true} // Make trial canvas read-only
-                highestPoint={highestPointRef} // Pass the highest point
-                onAfterStep={updateHighestPoint} // Calculate after each physics step
-              />
+              {trialWorldRef.current &&
+                canvasContainerDimensions &&
+                pixelsPerMeter && (
+                  <PhysicsRenderer
+                    worldRef={trialWorldRef as RefObject<p2.World>}
+                    width={canvasContainerDimensions?.width}
+                    height={canvasContainerDimensions?.height}
+                    pixelsPerMeter={pixelsPerMeter}
+                    readOnly={true} // Make trial canvas read-only
+                    highestPoint={highestPointRef} // Pass the highest point
+                    onAfterStep={updateHighestPoint} // Calculate after each physics step
+                  />
+                )}
             </div>
           </div>
         </div>

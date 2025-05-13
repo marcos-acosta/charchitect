@@ -3,6 +3,8 @@ import * as p2 from "p2-es";
 export type IPoint = [number, number];
 export type IPoints = IPoint[];
 
+export const AVG_LETTER_WIDTH_PIXELS = 1450;
+
 export const normalizePoints = (points: IPoints, factor?: number) => {
   if (!factor) {
     const xPoints = points.map((point) => point[0]);
@@ -10,7 +12,7 @@ export const normalizePoints = (points: IPoints, factor?: number) => {
     const maxX = Math.max(...xPoints);
     factor = 1 / maxX - minX;
   }
-  return points.map((point) => [point[0] / factor, point[1] / factor]);
+  return points.map((point) => [point[0] * factor, point[1] * factor]);
 };
 
 export const createLetterFromPoints = (
@@ -32,3 +34,9 @@ export const createLetterFromPoints = (
   concaveBody.shapes.forEach((shape) => (shape.material = material));
   world.addBody(concaveBody);
 };
+
+export const computePixelsPerMeter = (pixels: number, meters: number) =>
+  pixels / meters;
+
+export const computeMetersPerPixel = (pixels: number, meters: number) =>
+  meters / pixels;

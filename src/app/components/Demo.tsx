@@ -16,6 +16,8 @@ import LetterButton from "./LetterButton";
 const CANVAS_WIDTH_METERS = 10;
 const DESIRED_LETTER_WIDTH_METERS = 1;
 
+const WOOD_MATERIAL = new p2.Material();
+
 const createWorld = (
   canvasWidthPixels: number,
   canvasHeightPixels: number,
@@ -29,7 +31,7 @@ const createWorld = (
   const canvasHeightMeters = canvasHeightPixels * metersPerPixel;
 
   const average_letter_width_meters = AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
-  const scaling_ratio =
+  const scalingRatio =
     (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
     metersPerPixel;
 
@@ -47,31 +49,21 @@ const createWorld = (
   groundBody.addShape(groundShape);
   newWorld.addBody(groundBody);
 
-  const woodMaterial = new p2.Material();
-
   // Only add initial letters if requested
   if (!trialCanvas) {
     createLetterFromPoints(
       LETTER_POLYGONS[LETTERS.A] as IPoints,
       [0.5, canvasHeightMeters / 2],
       newWorld,
-      woodMaterial,
+      WOOD_MATERIAL,
       true,
-      scaling_ratio
-    );
-    createLetterFromPoints(
-      LETTER_POLYGONS[LETTERS.B] as IPoints,
-      [0.5, canvasHeightMeters / 2 + 2],
-      newWorld,
-      woodMaterial,
-      true,
-      scaling_ratio
+      scalingRatio
     );
   }
 
   const frictionContactMaterial = new p2.ContactMaterial(
-    woodMaterial,
-    woodMaterial,
+    WOOD_MATERIAL,
+    WOOD_MATERIAL,
     {
       friction: 10,
       stiffness: Math.max(),
@@ -167,6 +159,33 @@ export default function Demo() {
       sandboxWorldRef.current = createWorld(width, height, false);
       trialWorldRef.current = createWorld(width, height, true);
     }
+  };
+
+  const addLetterToTrial = (letter: LETTERS) => {
+    if (!sandboxWorldRef.current || !canvasContainerDimensions) {
+      return;
+    }
+    const metersPerPixel = computeMetersPerPixel(
+      canvasContainerDimensions.width,
+      CANVAS_WIDTH_METERS
+    );
+    const canvasHeightMeters =
+      canvasContainerDimensions.height * metersPerPixel;
+
+    const average_letter_width_meters =
+      AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
+    const scalingRatio =
+      (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
+      metersPerPixel;
+    createLetterFromPoints(
+      LETTER_POLYGONS[letter] as IPoints,
+      [0.5, canvasHeightMeters / 2],
+      sandboxWorldRef.current,
+      WOOD_MATERIAL,
+      true,
+      scalingRatio
+    );
+    setLettersUsed(new Set([...lettersUsed, letter]));
   };
 
   useEffect(() => {
@@ -269,7 +288,7 @@ export default function Demo() {
               <LetterButton
                 letter={letter}
                 used={lettersUsed.has(letter)}
-                onClick={() => {}}
+                onClick={() => addLetterToTrial(letter)}
                 key={letter}
               />
             ))}

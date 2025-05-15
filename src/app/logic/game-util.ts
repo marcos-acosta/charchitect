@@ -105,7 +105,7 @@ export const addLetterToWorld = (
   letter: LETTERS,
   world: p2.World,
   dimensions: IDimensions
-) => {
+): number => {
   const metersPerPixel = computeMetersPerPixel(
     dimensions.width,
     CANVAS_WIDTH_METERS
@@ -116,8 +116,8 @@ export const addLetterToWorld = (
   const scalingRatio =
     (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
     metersPerPixel;
-  createLetterFromPoints(
-    LETTER_POLYGONS[letter] as IPoints,
+  return createLetterFromPoints(
+    LETTER_POLYGONS[letter].exterior,
     [0.5, canvasHeightMeters / 2],
     world,
     WOOD_MATERIAL,

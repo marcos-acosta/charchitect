@@ -8,21 +8,17 @@ import {
   handleRotation,
   handleRotationEnd,
   handleRotationStart,
-  velocityToSpeed,
-  WOOD_MATERIAL,
 } from "../logic/p2-util";
 import { computePixelsPerMeter } from "../logic/render-util";
 import {
   ANGULAR_SPEED_THRESHOLD,
   CANVAS_WIDTH_METERS,
-  DESIRED_LETTER_WIDTH_METERS,
   LINEAR_SPEED_THRESHOLD,
   MIN_SECONDS_STABLE,
 } from "../logic/game-config";
 import {
   addLetterToWorld,
   allLettersStill,
-  cloneBodyToWorld,
   createWorld,
   runSimulation,
   updateHighestPoint,
@@ -47,7 +43,7 @@ export default function Game() {
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
   // The letters currently in use
-  const [lettersUsed, setLettersUsed] = useState<Set<LETTERS>>(new Set());
+  const [lettersInUse, setLettersInUse] = useState<Record<number, LETTERS>>({});
   // Whether all letters are currently still
   const [allLettersStillState, setAllLettersStillState] = useState(true);
   // Whether the letters have been still for some time
@@ -83,12 +79,12 @@ export default function Game() {
     if (!sandboxWorldRef.current || !canvasContainerDimensions) {
       return;
     }
-    addLetterToWorld(
+    const letterId = addLetterToWorld(
       letter,
       sandboxWorldRef.current,
       canvasContainerDimensions
     );
-    setLettersUsed(new Set([...lettersUsed, letter]));
+    setLettersInUse({ ...lettersInUse, [letterId]: letter });
   };
 
   const handleKeypress = (event: KeyboardEvent) => {
@@ -108,7 +104,7 @@ export default function Game() {
   useEffect(() => {
     addEventListener("keydown", handleKeypress);
     return () => removeEventListener("keydown", handleKeypress);
-  }, [sandboxWorldRef.current, lettersUsed]);
+  }, [sandboxWorldRef.current, lettersInUse]);
 
   // Create canvas and listen for canvas size updates
   useEffect(() => {
@@ -166,7 +162,7 @@ export default function Game() {
             {Object.values(LETTERS).map((letter) => (
               <LetterButton
                 letter={letter}
-                used={lettersUsed.has(letter)}
+                used={Object.values(lettersInUse).includes(letter)}
                 onClick={() => addLetterToTrial(letter)}
                 key={letter}
               />

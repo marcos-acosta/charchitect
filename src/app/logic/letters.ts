@@ -1,6 +1,6 @@
-import { LETTERS } from "./interfaces";
+import { ILetterPolygon, IPoints, LETTERS } from "./interfaces";
 
-const LETTER_A = [
+const LETTER_A: IPoints = [
   [937, 454],
   [412, 454],
   [320, 240],
@@ -45,7 +45,38 @@ const LETTER_A = [
   [1019, 259],
 ];
 
-const LETTER_B = [
+const LETTER_A_HOLES: IPoints[] = [
+  [
+    [909, 528],
+    [889.6498413085938, 574.1038818359375],
+    [870.2996215820312, 620.2078247070312],
+    [850.949462890625, 666.3117065429688],
+    [831.5992431640625, 712.4156494140625],
+    [812.2490844726562, 758.51953125],
+    [792.89892578125, 804.6234130859375],
+    [773.5487060546875, 850.7273559570312],
+    [754.1985473632812, 896.831298828125],
+    [734.848388671875, 942.9351806640625],
+    [715.4981689453125, 989.0390625],
+    [696.1480102539062, 1035.14306640625],
+    [676.749267578125, 1070.773681640625],
+    [656.972412109375, 1024.8511962890625],
+    [637.195556640625, 978.9287109375],
+    [617.4187622070312, 933.0062255859375],
+    [597.6419067382812, 887.083740234375],
+    [577.8650512695312, 841.1611938476562],
+    [558.0881958007812, 795.2387084960938],
+    [538.3113403320312, 749.316162109375],
+    [518.5345458984375, 703.3936767578125],
+    [498.7576904296875, 657.47119140625],
+    [478.9808349609375, 611.5487060546875],
+    [459.2039794921875, 565.6261596679688],
+    [452.032958984375, 528],
+    [902.032958984375, 528],
+  ],
+];
+
+const LETTER_B: IPoints = [
   [946, 692],
   [1013.6786499023438, 674.236083984375],
   [1078.72998046875, 648.5445556640625],
@@ -112,7 +143,7 @@ const LETTER_B = [
   [997.2053833007812, 711.5354614257812],
 ];
 
-const LETTER_C = [
+const LETTER_C: IPoints = [
   [1233, 1387],
   [1264, 926],
   [1233, 926],
@@ -232,7 +263,7 @@ const LETTER_C = [
   [1198, 1387],
 ];
 
-const LETTER_D = [
+const LETTER_D: IPoints = [
   [35, 0],
   [35, 37],
   [86, 37],
@@ -294,7 +325,7 @@ const LETTER_D = [
   [641, 0],
 ];
 
-const LETTER_E = [
+const LETTER_E: IPoints = [
   [428, 1282],
   [428, 746],
   [726, 746],
@@ -371,7 +402,7 @@ const LETTER_E = [
   [800, 1282],
 ];
 
-const LETTER_F = [
+const LETTER_F: IPoints = [
   [419, 1282],
   [419, 749],
   [666, 749],
@@ -438,7 +469,7 @@ const LETTER_F = [
   [718, 1282],
 ];
 
-const LETTER_G = [
+const LETTER_G: IPoints = [
   [1257, 1387],
   [1261.0751953125, 1337.1663818359375],
   [1265.150390625, 1287.3326416015625],
@@ -613,7 +644,7 @@ const LETTER_G = [
   [1244.4537353515625, 1387],
 ];
 
-const LETTER_H = [
+const LETTER_H: IPoints = [
   [421, 727],
   [471, 727],
   [521, 727],
@@ -816,33 +847,33 @@ const LETTER_H = [
   [421, 747.200927734375],
 ];
 
-const LETTER_POLYGONS = {
-  [LETTERS.A]: LETTER_A,
-  [LETTERS.B]: LETTER_B,
-  [LETTERS.C]: LETTER_C,
-  [LETTERS.D]: LETTER_D,
-  [LETTERS.E]: LETTER_E,
-  [LETTERS.F]: LETTER_F,
-  [LETTERS.G]: LETTER_G,
-  [LETTERS.H]: LETTER_H,
-  [LETTERS.I]: [[]],
-  [LETTERS.J]: [[]],
-  [LETTERS.K]: [[]],
-  [LETTERS.L]: [[]],
-  [LETTERS.M]: [[]],
-  [LETTERS.N]: [[]],
-  [LETTERS.O]: [[]],
-  [LETTERS.P]: [[]],
-  [LETTERS.Q]: [[]],
-  [LETTERS.R]: [[]],
-  [LETTERS.S]: [[]],
-  [LETTERS.T]: [[]],
-  [LETTERS.U]: [[]],
-  [LETTERS.V]: [[]],
-  [LETTERS.W]: [[]],
-  [LETTERS.X]: [[]],
-  [LETTERS.Y]: [[]],
-  [LETTERS.Z]: [[]],
+const LETTER_POLYGONS: Record<LETTERS, ILetterPolygon> = {
+  [LETTERS.A]: { exterior: LETTER_A, holes: LETTER_A_HOLES },
+  [LETTERS.B]: { exterior: LETTER_B, holes: [] },
+  [LETTERS.C]: { exterior: LETTER_C, holes: [] },
+  [LETTERS.D]: { exterior: LETTER_D, holes: [] },
+  [LETTERS.E]: { exterior: LETTER_E, holes: [] },
+  [LETTERS.F]: { exterior: LETTER_F, holes: [] },
+  [LETTERS.G]: { exterior: LETTER_G, holes: [] },
+  [LETTERS.H]: { exterior: LETTER_H, holes: [] },
+  [LETTERS.I]: { exterior: [], holes: [] },
+  [LETTERS.J]: { exterior: [], holes: [] },
+  [LETTERS.K]: { exterior: [], holes: [] },
+  [LETTERS.L]: { exterior: [], holes: [] },
+  [LETTERS.M]: { exterior: [], holes: [] },
+  [LETTERS.N]: { exterior: [], holes: [] },
+  [LETTERS.O]: { exterior: [], holes: [] },
+  [LETTERS.P]: { exterior: [], holes: [] },
+  [LETTERS.Q]: { exterior: [], holes: [] },
+  [LETTERS.R]: { exterior: [], holes: [] },
+  [LETTERS.S]: { exterior: [], holes: [] },
+  [LETTERS.T]: { exterior: [], holes: [] },
+  [LETTERS.U]: { exterior: [], holes: [] },
+  [LETTERS.V]: { exterior: [], holes: [] },
+  [LETTERS.W]: { exterior: [], holes: [] },
+  [LETTERS.X]: { exterior: [], holes: [] },
+  [LETTERS.Y]: { exterior: [], holes: [] },
+  [LETTERS.Z]: { exterior: [], holes: [] },
 };
 
 export default LETTER_POLYGONS;

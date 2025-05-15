@@ -4,7 +4,6 @@ import * as p2 from "p2-es";
 import {
   ROTATION_HANDLE_DISTANCE,
   COLORS,
-  ROTATION_HANDLE_RADIUS,
   FIXED_TIME_STEP,
   MAX_SUB_STEPS,
   getPhysicsCoord,

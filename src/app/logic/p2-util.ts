@@ -12,7 +12,7 @@ export const createLetterFromPoints = (
   material: p2.Material,
   trial = false,
   normalizeFactor = 2000
-) => {
+): number => {
   const concaveBody = new p2.Body({
     mass: 20,
     position: position,
@@ -25,6 +25,7 @@ export const createLetterFromPoints = (
   concaveBody.fromPolygon(letterPath);
   concaveBody.shapes.forEach((shape) => (shape.material = material));
   world.addBody(concaveBody);
+  return concaveBody.id;
 };
 
 export const velocityToSpeed = (velocity: p2.Vec2) =>

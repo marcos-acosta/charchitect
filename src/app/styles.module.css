@@ -4,6 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: "Times New Roman", Times, serif;
 }
 
 .coreGameContainer {
@@ -50,12 +51,12 @@
   box-shadow: -2px 2px 0px var(--foreground);
   gap: 2px;
   color: var(--foreground);
-  font-family: "Times New Roman", Times, serif;
   font-size: 18px;
   padding: 10px;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  font-family: inherit;
 }
 
 .buttonText {
@@ -84,16 +85,27 @@
   background-color: var(--background);
   color: var(--foreground);
   border: 1px solid var(--foreground);
-  font-family: "Times New Roman", Times, serif;
   font-size: 18px;
   padding: 5px;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: -2px 2px 0px var(--foreground);
+  font-family: inherit;
 }
 
 .letterButton.usedLetterButton {
   background-color: var(--foreground);
   color: var(--background);
+}
+
+.statusDivider {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.statusDivider hr {
+  border: none;
+  border-top: 1px dashed var(--foreground);
+  height: 1px;
 }

@@ -7,6 +7,7 @@ import {
   computePixelsPerMeter,
   createLetterFromPoints,
   IPoints,
+  velocityToSpeed,
 } from "../util";
 import LETTER_POLYGONS from "../letters";
 import styles from "./../styles.module.css";
@@ -16,25 +17,14 @@ import LetterButton from "./LetterButton";
 const CANVAS_WIDTH_METERS = 10;
 const DESIRED_LETTER_WIDTH_METERS = 1;
 
+const LINEAR_SPEED_THRESHOLD = 0.1;
+const ANGULAR_SPEED_THRESHOLD = 0.1;
+
+const MIN_SECONDS_STABLE = 3;
+
 const WOOD_MATERIAL = new p2.Material();
 
-const createWorld = (
-  canvasWidthPixels: number,
-  canvasHeightPixels: number,
-  trialCanvas = false
-) => {
-  const canvasWidthMeters = CANVAS_WIDTH_METERS;
-  const metersPerPixel = computeMetersPerPixel(
-    canvasWidthPixels,
-    canvasWidthMeters
-  );
-  const canvasHeightMeters = canvasHeightPixels * metersPerPixel;
-
-  const average_letter_width_meters = AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
-  const scalingRatio =
-    (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
-    metersPerPixel;
-
+const createWorld = (trialCanvas = false) => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
     gravity: [0, trialCanvas ? -9.81 : 0],
@@ -43,23 +33,11 @@ const createWorld = (
   // Add a ground plane
   const groundBody = new p2.Body({
     type: p2.Body.STATIC,
-    position: [canvasWidthMeters / 2, -0.25],
+    position: [CANVAS_WIDTH_METERS / 2, -0.25],
   });
-  const groundShape = new p2.Box({ width: canvasWidthMeters, height: 1 });
+  const groundShape = new p2.Box({ width: CANVAS_WIDTH_METERS, height: 1 });
   groundBody.addShape(groundShape);
   newWorld.addBody(groundBody);
-
-  // // Only add initial letters if requested
-  // if (!trialCanvas) {
-  //   createLetterFromPoints(
-  //     LETTER_POLYGONS[LETTERS.A] as IPoints,
-  //     [0.5, canvasHeightMeters / 2],
-  //     newWorld,
-  //     WOOD_MATERIAL,
-  //     true,
-  //     scalingRatio
-  //   );
-  // }
 
   const frictionContactMaterial = new p2.ContactMaterial(
     WOOD_MATERIAL,
@@ -115,6 +93,21 @@ const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World): p2.Body => {
   return newBody;
 };
 
+const allLettersStill = (
+  world: p2.World,
+  linearThreshold: number,
+  angularThreshold: number
+) => {
+  for (const body of world.bodies) {
+    const linearSpeed = velocityToSpeed(body.velocity);
+    const angularSpeed = body.angularVelocity;
+    if (linearSpeed > linearThreshold || angularSpeed > angularThreshold) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export default function Demo() {
   // Create sandbox world (left side - interactive)
   const sandboxWorldRef = useRef<p2.World | null>(null);
@@ -131,9 +124,13 @@ export default function Demo() {
   const highestPointRef = useRef<number>(0);
   // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const allLettersStillRef = useRef<boolean>(true);
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
   const [lettersUsed, setLettersUsed] = useState<Set<LETTERS>>(new Set());
+  const [allLettersStillState, setAllLettersStillState] = useState(true);
+  const [stabilized, setStabilized] = useState(false);
+  const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -154,8 +151,8 @@ export default function Demo() {
     });
 
     if (sandboxWorldRef.current === null) {
-      sandboxWorldRef.current = createWorld(width, height, false);
-      trialWorldRef.current = createWorld(width, height, true);
+      sandboxWorldRef.current = createWorld(false);
+      trialWorldRef.current = createWorld(true);
     }
   };
 
@@ -238,6 +235,33 @@ export default function Demo() {
     }
   };
 
+  const updateAllLettersStill = () => {
+    if (trialWorldRef.current) {
+      const allLettersStillResult = allLettersStill(
+        trialWorldRef.current,
+        LINEAR_SPEED_THRESHOLD,
+        ANGULAR_SPEED_THRESHOLD
+      );
+      if (allLettersStillResult != allLettersStillRef.current) {
+        setAllLettersStillState(allLettersStillResult);
+        if (allLettersStillResult) {
+          const timeout: NodeJS.Timeout = setTimeout(
+            () => setStabilized(true),
+            MIN_SECONDS_STABLE * 1000
+          );
+          stabilityTimeoutRef.current = timeout;
+        } else {
+          if (stabilityTimeoutRef.current) {
+            clearTimeout(stabilityTimeoutRef.current);
+          }
+          stabilityTimeoutRef.current = null;
+          setStabilized(false);
+        }
+      }
+      allLettersStillRef.current = allLettersStillResult;
+    }
+  };
+
   const updateHighestPoint = () => {
     const trialWorld = trialWorldRef.current;
     if (!trialWorld || trialWorld.bodies.length <= 1) {
@@ -262,6 +286,11 @@ export default function Demo() {
     });
 
     highestPointRef.current = highestPoint;
+  };
+
+  const afterStep = () => {
+    updateHighestPoint();
+    updateAllLettersStill();
   };
 
   // Copy the sandbox world to the trial world
@@ -313,6 +342,19 @@ export default function Demo() {
                 <div className={styles.buttonText}>RUN TRIAL</div>
                 <div className={styles.shortcut}>[enter]</div>
               </button>
+              <div className={styles.statusDivider}>
+                <hr />
+              </div>
+              <div className={styles.statusContainer}>
+                <div className={styles.objectsMovingContainer}>
+                  {allLettersStillState
+                    ? "All letters still"
+                    : "Some letters still moving"}
+                </div>
+                <div className={styles.fullyStableContainer}>
+                  {stabilized ? "Fully stabilized" : "Not yet stabilized"}
+                </div>
+              </div>
             </div>
             <div className={styles.canvasContainer} ref={canvasContainerRef}>
               {sandboxWorldRef.current &&
@@ -340,7 +382,7 @@ export default function Demo() {
                     pixelsPerMeter={pixelsPerMeter}
                     readOnly={true} // Make trial canvas read-only
                     highestPoint={highestPointRef} // Pass the highest point
-                    onAfterStep={updateHighestPoint} // Calculate after each physics step
+                    onAfterStep={afterStep}
                   />
                 )}
             </div>

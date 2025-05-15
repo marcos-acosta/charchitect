@@ -45,3 +45,6 @@ export const computePixelsPerMeter = (pixels: number, meters: number) =>
 
 export const computeMetersPerPixel = (pixels: number, meters: number) =>
   meters / pixels;
+
+export const velocityToSpeed = (velocity: p2.Vec2) =>
+  Math.sqrt(Math.pow(velocity[0], 2) + Math.pow(velocity[1], 2));

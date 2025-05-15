@@ -1,12 +1,37 @@
-import { IPoint, IPoints } from "./interfaces";
+import { IPoint, IPoints, IPolygons } from "./interfaces";
 import * as p2 from "p2-es";
 import { normalizePoints } from "./letter-util";
 import { RefObject } from "react";
+import * as decomp from "poly-decomp-es";
 
 export const WOOD_MATERIAL = new p2.Material();
 
+const decomposePolygon = (polygon: IPoints): IPolygons => {
+  // Copied from the source.
+  const p = [];
+  for (let i = 0; i < polygon.length; i++) {
+    p[i] = p2.vec2.clone(polygon[i]);
+  }
+  decomp.makeCCW(p as decomp.Polygon);
+  decomp.removeCollinearPoints(p as decomp.Polygon);
+  const convexes = decomp.quickDecomp(p as decomp.Polygon);
+  return convexes as IPolygons;
+};
+
+const makeRelativeToOrigin = (polygon: IPoints, origin: IPoint) => {
+  return polygon.map((point) => [point[0] - origin[0], point[1] - origin[1]]);
+};
+
+const findCenterOfPoints = (points: IPoints): IPoint => {
+  const sumX = points.reduce((sum, point) => sum + point[0], 0);
+  const sumY = points.reduce((sum, point) => sum + point[1], 0);
+  const avgX = sumX / points.length;
+  const avgY = sumY / points.length;
+  return [avgX, avgY];
+};
+
 export const createLetterFromPoints = (
-  points: IPoints,
+  polygons: IPolygons,
   position: IPoint,
   world: p2.World,
   material: p2.Material,
@@ -21,9 +46,23 @@ export const createLetterFromPoints = (
     collisionResponse: !trial,
     type: p2.Body.DYNAMIC,
   });
-  const letterPath = normalizePoints(points, normalizeFactor);
-  concaveBody.fromPolygon(letterPath);
+  polygons.forEach((polygon) => {
+    decomposePolygon(normalizePoints(polygon, normalizeFactor)).forEach(
+      (polygon: IPoints) => {
+        const polygonCenter = findCenterOfPoints(polygon);
+        const relativeToOrigin = makeRelativeToOrigin(polygon, polygonCenter);
+        concaveBody.addShape(
+          new p2.Convex({ vertices: relativeToOrigin }),
+          polygonCenter,
+          0
+        );
+      }
+    );
+  });
+  concaveBody.updateMassProperties();
+  concaveBody.adjustCenterOfMass();
   concaveBody.shapes.forEach((shape) => (shape.material = material));
+
   world.addBody(concaveBody);
   return concaveBody.id;
 };

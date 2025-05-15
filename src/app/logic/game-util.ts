@@ -8,10 +8,9 @@ import {
   velocityToSpeed,
   WOOD_MATERIAL,
 } from "./p2-util";
-import { IDimensions, ILetterPolygon, IPoints, LETTERS } from "./interfaces";
+import { IDimensions, IPolygons } from "./interfaces";
 import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
-import LETTER_POLYGONS from "./letters";
 import { RefObject } from "react";
 
 export const createWorld = (trialCanvas = false) => {
@@ -102,7 +101,7 @@ export const allLettersStill = (
 };
 
 export const addLetterToWorld = (
-  letter: ILetterPolygon,
+  letterPolygons: IPolygons,
   world: p2.World,
   dimensions: IDimensions
 ): number => {
@@ -116,7 +115,7 @@ export const addLetterToWorld = (
     (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
     metersPerPixel;
   return createLetterFromPoints(
-    letter.exterior,
+    letterPolygons,
     [0.5, canvasHeightMeters / 2],
     world,
     WOOD_MATERIAL,

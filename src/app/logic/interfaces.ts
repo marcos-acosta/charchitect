@@ -3,13 +3,9 @@ export interface IDimensions {
   height: number;
 }
 
-export interface ILetterPolygon {
-  exterior: IPoints;
-  holes: IPoints[];
-}
-
 export type IPoint = [number, number];
 export type IPoints = IPoint[];
+export type IPolygons = IPoints[];
 
 export enum LETTERS {
   A = "A",

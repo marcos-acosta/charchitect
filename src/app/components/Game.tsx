@@ -2,7 +2,7 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import { IDimensions, ILetterPolygon, LETTERS } from "../logic/interfaces";
+import { IDimensions, IPolygons, LETTERS } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
 import {
   handleRotation,
@@ -76,15 +76,12 @@ export default function Game() {
     }
   };
 
-  const addLetterToTrial = (
-    letterEnum: LETTERS,
-    letterPolygon: ILetterPolygon
-  ) => {
+  const addLetterToTrial = (letterEnum: LETTERS, letterPolygons: IPolygons) => {
     if (!sandboxWorldRef.current || !canvasContainerDimensions) {
       return;
     }
     const letterId = addLetterToWorld(
-      letterPolygon,
+      letterPolygons,
       sandboxWorldRef.current,
       canvasContainerDimensions
     );
@@ -98,8 +95,8 @@ export default function Game() {
     const letter = event.key.toUpperCase();
     if (Object.keys(LETTERS).includes(letter)) {
       const letterEnum = LETTERS[letter as keyof typeof LETTERS];
-      const letterPolygon = LETTER_POLYGONS[letterEnum];
-      addLetterToTrial(letterEnum, letterPolygon);
+      const letterPolygons = LETTER_POLYGONS[letterEnum];
+      addLetterToTrial(letterEnum, letterPolygons);
     }
   };
 

@@ -1,4 +1,4 @@
-import { combineClasses } from "../util";
+import { combineClasses } from "../logic/util";
 import styles from "./../styles.module.css";
 
 interface LetterButtonProps {

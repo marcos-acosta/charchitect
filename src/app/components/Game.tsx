@@ -1,114 +1,18 @@
 import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import PhysicsRenderer from "./PhysicsRenderer";
-import {
-  AVG_LETTER_WIDTH_PIXELS,
-  computeMetersPerPixel,
-  computePixelsPerMeter,
-  createLetterFromPoints,
-  IPoints,
-  velocityToSpeed,
-} from "../util";
-import LETTER_POLYGONS from "../letters";
+import LETTER_POLYGONS from "../logic/letters";
 import styles from "./../styles.module.css";
-import { IDimensions, LETTERS } from "../interfaces";
+import { IDimensions, IPoints, LETTERS } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
+import { createLetterFromPoints, velocityToSpeed, WOOD_MATERIAL } from "../logic/p2-util";
+import { computeMetersPerPixel, computePixelsPerMeter } from "../logic/render-util";
+import { AVG_LETTER_WIDTH_PIXELS } from "../logic/letter-util";
+import { ANGULAR_SPEED_THRESHOLD, CANVAS_WIDTH_METERS, DESIRED_LETTER_WIDTH_METERS, LINEAR_SPEED_THRESHOLD, MIN_SECONDS_STABLE } from "../logic/game-config";
+import { allLettersStill, cloneBodyToWorld, createWorld } from "../logic/game-util";
 
-const CANVAS_WIDTH_METERS = 10;
-const DESIRED_LETTER_WIDTH_METERS = 1;
-
-const LINEAR_SPEED_THRESHOLD = 0.1;
-const ANGULAR_SPEED_THRESHOLD = 0.1;
-
-const MIN_SECONDS_STABLE = 3;
-
-const WOOD_MATERIAL = new p2.Material();
-
-const createWorld = (trialCanvas = false) => {
-  // Create new physics world with gravity
-  const newWorld = new p2.World({
-    gravity: [0, trialCanvas ? -9.81 : 0],
-  });
-
-  // Add a ground plane
-  const groundBody = new p2.Body({
-    type: p2.Body.STATIC,
-    position: [CANVAS_WIDTH_METERS / 2, -0.25],
-  });
-  const groundShape = new p2.Box({ width: CANVAS_WIDTH_METERS, height: 1 });
-  groundBody.addShape(groundShape);
-  newWorld.addBody(groundBody);
-
-  const frictionContactMaterial = new p2.ContactMaterial(
-    WOOD_MATERIAL,
-    WOOD_MATERIAL,
-    {
-      friction: 10,
-      stiffness: Math.max(),
-    }
-  );
-  newWorld.addContactMaterial(frictionContactMaterial);
-
-  return newWorld;
-};
-
-// Function to clone a body from one world to another
-const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World): p2.Body => {
-  // Skip cloning static ground bodies
-  if (
-    body.type === p2.Body.STATIC &&
-    body.shapes.some((s) => s instanceof p2.Box && (s as p2.Box).width > 10)
-  ) {
-    return body;
-  }
-
-  // Create a new body with the same properties
-  const newBody = new p2.Body({
-    mass: body.mass,
-    position: [body.position[0], body.position[1]],
-    angle: body.angle,
-    velocity: [0, 0],
-    angularVelocity: 0,
-    damping: 0.01, // Set default damping for trial world
-    angularDamping: 0.01, // Set default angular damping for trial world
-    type: body.type,
-  });
-
-  // Clone all shapes from the original body
-  body.shapes.forEach((shape) => {
-    if (shape instanceof p2.Box) {
-      const boxShape = new p2.Box({
-        width: shape.width,
-        height: shape.height,
-      });
-      newBody.addShape(boxShape, shape.position, shape.angle);
-    } else if (shape instanceof p2.Convex) {
-      const convexShape = new p2.Convex({ vertices: [...shape.vertices] });
-      newBody.addShape(convexShape, shape.position, shape.angle);
-    }
-  });
-
-  // Add the new body to the target world
-  targetWorld.addBody(newBody);
-  return newBody;
-};
-
-const allLettersStill = (
-  world: p2.World,
-  linearThreshold: number,
-  angularThreshold: number
-) => {
-  for (const body of world.bodies) {
-    const linearSpeed = velocityToSpeed(body.velocity);
-    const angularSpeed = body.angularVelocity;
-    if (linearSpeed > linearThreshold || angularSpeed > angularThreshold) {
-      return false;
-    }
-  }
-  return true;
-};
-
-export default function Demo() {
+export default function Game() {
+  /** REFS */
   // Create sandbox world (left side - interactive)
   const sandboxWorldRef = useRef<p2.World | null>(null);
   // Create trial world (right side - read-only with gravity)
@@ -124,13 +28,20 @@ export default function Demo() {
   const highestPointRef = useRef<number>(0);
   // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  // Whether all letters are currently still
   const allLettersStillRef = useRef<boolean>(true);
+  // Timeout to detect stability
+  const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /** STATES */
+  // The current canvas container dimensions
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
+  // The letters currently in use
   const [lettersUsed, setLettersUsed] = useState<Set<LETTERS>>(new Set());
+  // Whether all letters are currently still
   const [allLettersStillState, setAllLettersStillState] = useState(true);
-  const [stabilized, setStabilized] = useState(false);
-  const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Whether the letters have been still for some time
+  const [stabilized, setStabilized] = useState(true);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(

@@ -3,6 +3,9 @@ export interface IDimensions {
   height: number;
 }
 
+export type IPoint = [number, number];
+export type IPoints = IPoint[];
+
 export enum LETTERS {
   A = "A",
   B = "B",

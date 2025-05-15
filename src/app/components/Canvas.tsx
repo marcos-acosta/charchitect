@@ -2,7 +2,6 @@ import React, { useRef, useEffect, RefObject } from "react";
 import styles from "./../styles.module.css";
 import * as p2 from "p2-es";
 import {
-  ROTATION_HANDLE_HIT_RADIUS,
   ROTATION_HANDLE_DISTANCE,
   COLORS,
   ROTATION_HANDLE_RADIUS,
@@ -10,6 +9,12 @@ import {
   MAX_SUB_STEPS,
   getPhysicsCoord,
 } from "../logic/render-util";
+import {
+  endInteraction,
+  initMouseInteraction,
+  startInteraction,
+  updateInteraction,
+} from "../logic/interaction-util";
 
 interface CanvasProps {
   worldRef: RefObject<p2.World>;
@@ -39,173 +44,48 @@ export default function Canvas(props: CanvasProps) {
   // Rotation state
   const isRotatingRef = useRef<boolean>(false);
 
-  // Find the body under the given point
-  const getBodyAtPoint = (worldPoint: [number, number]): p2.Body | null => {
-    const world = props.worldRef.current;
-    if (!world) return null;
-
-    // Use world.hitTest to find bodies at the given point
-    const hitBodies = world.hitTest(worldPoint, world.bodies, 0.1);
-
-    if (hitBodies.length > 0) {
-      // Filter out static bodies if you don't want to drag them
-      const dynamicBodies = hitBodies.filter((b) => b.type !== p2.Body.STATIC);
-      return dynamicBodies.length > 0 ? dynamicBodies[0] : null;
-    }
-
-    return null;
+  // Convenience functions
+  const _startInteraction = (worldPoint: [number, number]) => {
+    startInteraction(
+      worldPoint,
+      Boolean(props.readOnly),
+      props.worldRef,
+      mouseBodyRef,
+      mouseConstraintRef,
+      selectedBodyRef,
+      isRotatingRef,
+      isDraggingRef,
+      props.onRotationStart,
+      props.onObjectSelected
+    );
   };
 
-  // Check if a point is near the rotation handle
-  const isNearRotationHandle = (worldPoint: [number, number]): boolean => {
-    if (!selectedBodyRef.current) return false;
-
-    const body = selectedBodyRef.current;
-
-    // Calculate handle position in world coordinates
-    const handleX =
-      body.position[0] + Math.cos(body.angle) * ROTATION_HANDLE_DISTANCE;
-    const handleY =
-      body.position[1] + Math.sin(body.angle) * ROTATION_HANDLE_DISTANCE;
-
-    // Calculate distance between point and handle
-    const dx = worldPoint[0] - handleX;
-    const dy = worldPoint[1] - handleY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    return distance <= ROTATION_HANDLE_HIT_RADIUS;
+  const _updateInteraction = (worldPoint: [number, number]) => {
+    updateInteraction(
+      worldPoint,
+      Boolean(props.readOnly),
+      mouseBodyRef,
+      selectedBodyRef,
+      isRotatingRef,
+      isDraggingRef,
+      props.onRotation
+    );
   };
 
-  // Calculate angle between body center and point
-  const calculateAngle = (
-    bodyPosition: [number, number],
-    point: [number, number]
-  ): number => {
-    const dx = point[0] - bodyPosition[0];
-    const dy = point[1] - bodyPosition[1];
-    return Math.atan2(dy, dx);
+  const _endInteraction = () => {
+    endInteraction(
+      Boolean(props.readOnly),
+      props.worldRef,
+      mouseConstraintRef,
+      selectedBodyRef,
+      isRotatingRef,
+      isDraggingRef,
+      props.onRotationEnd
+    );
   };
 
-  // Setup mouse interaction physics
-  const initMouseInteraction = () => {
-    if (!props.worldRef.current || props.readOnly) return;
-
-    // Create a body for the mouse cursor
-    const mouseBody = new p2.Body({
-      type: p2.Body.KINEMATIC,
-      collisionResponse: false,
-    });
-    props.worldRef.current.addBody(mouseBody);
-    mouseBodyRef.current = mouseBody;
-  };
-
-  // Start drag or rotation
-  const startInteraction = (worldPoint: [number, number]) => {
-    // If readOnly, do nothing
-    if (props.readOnly) return;
-
-    if (!props.worldRef.current || !mouseBodyRef.current) return;
-
-    // First check if we're near the rotation handle
-    if (selectedBodyRef.current && isNearRotationHandle(worldPoint)) {
-      // Start rotation mode
-      isRotatingRef.current = true;
-
-      // Notify parent component about rotation start
-      if (props.onRotationStart) {
-        props.onRotationStart(selectedBodyRef.current);
-      }
-
-      return;
-    }
-
-    // Otherwise check for body selection/dragging
-    const hitBody = getBodyAtPoint(worldPoint);
-
-    if (hitBody && hitBody.type !== p2.Body.STATIC) {
-      selectedBodyRef.current = hitBody;
-      isDraggingRef.current = true;
-
-      // Notify parent component about the selected body
-      if (props.onObjectSelected) {
-        props.onObjectSelected(hitBody);
-      }
-
-      // Position the mouse body at the click point
-      mouseBodyRef.current.position = worldPoint;
-
-      // Create a constraint between the body and the mouse
-      const constraint = new p2.LockConstraint(mouseBodyRef.current, hitBody, {
-        collideConnected: false,
-      });
-
-      // Set constraint parameters for smoother dragging
-      constraint.setStiffness(Math.max()); // Spring stiffness
-      constraint.setRelaxation(1); // Relaxation for soft constraint
-
-      props.worldRef.current.addConstraint(constraint);
-      mouseConstraintRef.current = constraint;
-    } else if (!hitBody) {
-      // Clicked on empty space, deselect
-      selectedBodyRef.current = null;
-      if (props.onObjectSelected) {
-        props.onObjectSelected(null);
-      }
-    }
-  };
-
-  // Update dragging or rotation
-  const updateInteraction = (worldPoint: [number, number]) => {
-    // If readOnly, do nothing
-    if (props.readOnly) return;
-
-    if (isRotatingRef.current && selectedBodyRef.current) {
-      // We're in rotation mode
-      const body = selectedBodyRef.current;
-
-      // Calculate new angle based on mouse position relative to body center
-      const newAngle = calculateAngle(
-        body.position as [number, number],
-        worldPoint
-      );
-
-      // Apply the rotation
-      body.angle = newAngle;
-      body.angularVelocity = 0; // Stop any existing rotation
-
-      // Notify parent component about rotation
-      if (props.onRotation) {
-        props.onRotation(body, newAngle);
-      }
-    } else if (isDraggingRef.current && mouseBodyRef.current) {
-      // Regular dragging mode
-      mouseBodyRef.current.position = worldPoint;
-    }
-  };
-
-  // End dragging or rotation
-  const endInteraction = () => {
-    // If readOnly, do nothing
-    if (props.readOnly) return;
-
-    if (isRotatingRef.current && selectedBodyRef.current) {
-      // End rotation mode
-      isRotatingRef.current = false;
-
-      // Notify parent component
-      if (props.onRotationEnd) {
-        props.onRotationEnd(selectedBodyRef.current);
-      }
-    } else if (
-      isDraggingRef.current &&
-      props.worldRef.current &&
-      mouseConstraintRef.current
-    ) {
-      // End dragging mode
-      props.worldRef.current.removeConstraint(mouseConstraintRef.current);
-      mouseConstraintRef.current = null;
-      isDraggingRef.current = false;
-    }
+  const _initMouseInteraction = () => {
+    initMouseInteraction(props.worldRef, Boolean(props.readOnly), mouseBodyRef);
   };
 
   const drawWorld = (ctx: CanvasRenderingContext2D) => {
@@ -396,7 +276,7 @@ export default function Canvas(props: CanvasProps) {
       props.pixelsPerMeter,
       props.height
     );
-    startInteraction(worldPoint);
+    _startInteraction(worldPoint);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -407,11 +287,11 @@ export default function Canvas(props: CanvasProps) {
       props.pixelsPerMeter,
       props.height
     );
-    updateInteraction(worldPoint);
+    _updateInteraction(worldPoint);
   };
 
   const handleMouseUp = () => {
-    endInteraction();
+    _endInteraction();
   };
 
   // Add touch support for mobile
@@ -425,7 +305,7 @@ export default function Canvas(props: CanvasProps) {
         props.pixelsPerMeter,
         props.height
       );
-      startInteraction(worldPoint);
+      _startInteraction(worldPoint);
       e.preventDefault();
     }
   };
@@ -440,13 +320,13 @@ export default function Canvas(props: CanvasProps) {
         props.pixelsPerMeter,
         props.height
       );
-      updateInteraction(worldPoint);
+      _updateInteraction(worldPoint);
       e.preventDefault();
     }
   };
 
   const handleTouchEnd = (e: TouchEvent) => {
-    endInteraction();
+    _endInteraction();
     e.preventDefault();
   };
 
@@ -460,7 +340,7 @@ export default function Canvas(props: CanvasProps) {
 
       // Initialize mouse physics body (only for interactive mode)
       if (!props.readOnly) {
-        initMouseInteraction();
+        _initMouseInteraction();
       }
 
       if (!props.readOnly) {

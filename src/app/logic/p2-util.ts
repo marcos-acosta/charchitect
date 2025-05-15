@@ -1,6 +1,7 @@
 import { IPoint, IPoints } from "./interfaces";
 import * as p2 from "p2-es";
 import { normalizePoints } from "./letter-util";
+import { RefObject } from "react";
 
 export const WOOD_MATERIAL = new p2.Material();
 
@@ -26,7 +27,6 @@ export const createLetterFromPoints = (
   world.addBody(concaveBody);
 };
 
-
 export const velocityToSpeed = (velocity: p2.Vec2) =>
   Math.sqrt(Math.pow(velocity[0], 2) + Math.pow(velocity[1], 2));
 
@@ -47,4 +47,24 @@ export const handleRotation = (body: p2.Body) => {
 // Handle rotation end
 export const handleRotationEnd = (body: p2.Body) => {
   body.type = p2.Body.DYNAMIC;
+};
+
+// Find the body under the given point
+export const getBodyAtPoint = (
+  worldRef: RefObject<p2.World | null>,
+  worldPoint: [number, number]
+): p2.Body | null => {
+  const world = worldRef.current;
+  if (!world) return null;
+
+  // Use world.hitTest to find bodies at the given point
+  const hitBodies = world.hitTest(worldPoint, world.bodies, 0.1);
+
+  if (hitBodies.length > 0) {
+    // Filter out static bodies if you don't want to drag them
+    const dynamicBodies = hitBodies.filter((b) => b.type !== p2.Body.STATIC);
+    return dynamicBodies.length > 0 ? dynamicBodies[0] : null;
+  }
+
+  return null;
 };

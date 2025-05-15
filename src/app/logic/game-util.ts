@@ -1,6 +1,13 @@
 import * as p2 from "p2-es";
-import { CANVAS_WIDTH_METERS, DESIRED_LETTER_WIDTH_METERS } from "./game-config";
-import { createLetterFromPoints, velocityToSpeed, WOOD_MATERIAL } from "./p2-util";
+import {
+  CANVAS_WIDTH_METERS,
+  DESIRED_LETTER_WIDTH_METERS,
+} from "./game-config";
+import {
+  createLetterFromPoints,
+  velocityToSpeed,
+  WOOD_MATERIAL,
+} from "./p2-util";
 import { IDimensions, IPoints, LETTERS } from "./interfaces";
 import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
@@ -36,7 +43,10 @@ export const createWorld = (trialCanvas = false) => {
 };
 
 // Function to clone a body from one world to another
-export const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World): p2.Body => {
+export const cloneBodyToWorld = (
+  body: p2.Body,
+  targetWorld: p2.World
+): p2.Body => {
   // Skip cloning static ground bodies
   if (
     body.type === p2.Body.STATIC &&
@@ -91,16 +101,18 @@ export const allLettersStill = (
   return true;
 };
 
-export const addLetterToWorld = (letter: LETTERS, world: p2.World, dimensions: IDimensions) => {
+export const addLetterToWorld = (
+  letter: LETTERS,
+  world: p2.World,
+  dimensions: IDimensions
+) => {
   const metersPerPixel = computeMetersPerPixel(
     dimensions.width,
     CANVAS_WIDTH_METERS
   );
-  const canvasHeightMeters =
-    dimensions.height * metersPerPixel;
+  const canvasHeightMeters = dimensions.height * metersPerPixel;
 
-  const average_letter_width_meters =
-    AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
+  const average_letter_width_meters = AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
   const scalingRatio =
     (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
     metersPerPixel;
@@ -114,7 +126,10 @@ export const addLetterToWorld = (letter: LETTERS, world: p2.World, dimensions: I
   );
 };
 
-export const updateHighestPoint = (trialWorld: p2.World | null, highestPointRef: RefObject<number>) => {
+export const updateHighestPoint = (
+  trialWorld: p2.World | null,
+  highestPointRef: RefObject<number>
+) => {
   if (!trialWorld || trialWorld.bodies.length <= 1) {
     // Only ground body or no bodies
     highestPointRef.current = 0;
@@ -137,7 +152,10 @@ export const updateHighestPoint = (trialWorld: p2.World | null, highestPointRef:
 };
 
 // Copy the sandbox world to the trial world
-export const runSimulation = (sandboxWorldRef: RefObject<p2.World | null>, trialWorldRef: RefObject<p2.World | null>) => {
+export const runSimulation = (
+  sandboxWorldRef: RefObject<p2.World | null>,
+  trialWorldRef: RefObject<p2.World | null>
+) => {
   const sandboxWorld = sandboxWorldRef.current;
   const trialWorld = trialWorldRef.current;
 

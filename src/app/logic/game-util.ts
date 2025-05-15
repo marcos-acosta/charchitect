@@ -1,6 +1,11 @@
 import * as p2 from "p2-es";
-import { CANVAS_WIDTH_METERS } from "./game-config";
-import { velocityToSpeed, WOOD_MATERIAL } from "./p2-util";
+import { CANVAS_WIDTH_METERS, DESIRED_LETTER_WIDTH_METERS } from "./game-config";
+import { createLetterFromPoints, velocityToSpeed, WOOD_MATERIAL } from "./p2-util";
+import { IDimensions, IPoints, LETTERS } from "./interfaces";
+import { computeMetersPerPixel } from "./render-util";
+import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
+import LETTER_POLYGONS from "./letters";
+import { RefObject } from "react";
 
 export const createWorld = (trialCanvas = false) => {
   // Create new physics world with gravity
@@ -84,4 +89,78 @@ export const allLettersStill = (
     }
   }
   return true;
+};
+
+export const addLetterToWorld = (letter: LETTERS, world: p2.World, dimensions: IDimensions) => {
+  const metersPerPixel = computeMetersPerPixel(
+    dimensions.width,
+    CANVAS_WIDTH_METERS
+  );
+  const canvasHeightMeters =
+    dimensions.height * metersPerPixel;
+
+  const average_letter_width_meters =
+    AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
+  const scalingRatio =
+    (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
+    metersPerPixel;
+  createLetterFromPoints(
+    LETTER_POLYGONS[letter] as IPoints,
+    [0.5, canvasHeightMeters / 2],
+    world,
+    WOOD_MATERIAL,
+    true,
+    scalingRatio
+  );
+};
+
+export const updateHighestPoint = (trialWorld: p2.World | null, highestPointRef: RefObject<number>) => {
+  if (!trialWorld || trialWorld.bodies.length <= 1) {
+    // Only ground body or no bodies
+    highestPointRef.current = 0;
+    return;
+  }
+  let highestPoint = 0;
+  trialWorld.bodies.forEach((body) => {
+    // Skip ground body
+    if (body.type === p2.Body.STATIC) {
+      return;
+    }
+    // Find the highest point of this body
+    body.updateAABB();
+    const bodyHeight = body.aabb.upperBound[1];
+    if (bodyHeight > highestPoint) {
+      highestPoint = bodyHeight;
+    }
+  });
+  highestPointRef.current = highestPoint;
+};
+
+// Copy the sandbox world to the trial world
+export const runSimulation = (sandboxWorldRef: RefObject<p2.World | null>, trialWorldRef: RefObject<p2.World | null>) => {
+  const sandboxWorld = sandboxWorldRef.current;
+  const trialWorld = trialWorldRef.current;
+
+  if (!sandboxWorld || !trialWorld) return;
+
+  // Clear existing non-ground bodies from trial world
+  const bodiesToRemove = [];
+  for (let i = 0; i < trialWorld.bodies.length; i++) {
+    const body = trialWorld.bodies[i];
+    // Skip ground body
+    if (body.type === p2.Body.STATIC) {
+      continue;
+    }
+    bodiesToRemove.push(body);
+  }
+
+  // Remove bodies from trial world
+  bodiesToRemove.forEach((body) => {
+    trialWorld.removeBody(body);
+  });
+
+  // Copy bodies from sandbox to trial
+  sandboxWorld.bodies.forEach((body) => {
+    cloneBodyToWorld(body, trialWorld);
+  });
 };

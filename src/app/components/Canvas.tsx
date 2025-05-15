@@ -1,8 +1,17 @@
-import React, { useRef, useEffect, RefObject, useState } from "react";
+import React, { useRef, useEffect, RefObject } from "react";
 import styles from "./../styles.module.css";
 import * as p2 from "p2-es";
+import {
+  ROTATION_HANDLE_HIT_RADIUS,
+  ROTATION_HANDLE_DISTANCE,
+  COLORS,
+  ROTATION_HANDLE_RADIUS,
+  FIXED_TIME_STEP,
+  MAX_SUB_STEPS,
+  getPhysicsCoord,
+} from "../logic/render-util";
 
-interface PhysicsRendererProps {
+interface CanvasProps {
   worldRef: RefObject<p2.World>;
   width: number;
   height: number;
@@ -16,21 +25,7 @@ interface PhysicsRendererProps {
   onAfterStep?: () => void; // Callback after each physics step
 }
 
-// Colors for different body types
-const colors = {
-  dynamic: "#000",
-  static: "#000",
-  kinematic: "#000",
-  selected: "#F04747", // Color for selected objects
-  rotationHandle: "#F04747", // Color for rotation handle
-};
-
-// Constants for rotation handle
-const ROTATION_HANDLE_RADIUS = 0.1; // Size of the handle in meters
-const ROTATION_HANDLE_DISTANCE = 0.8; // Distance from center in meters
-const ROTATION_HANDLE_HIT_RADIUS = 0.2; // Clickable area in meters
-
-export default function PhysicsRenderer(props: PhysicsRendererProps) {
+export default function Canvas(props: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(-1);
   const previousTimeRef = useRef<number | null>(null);
@@ -43,24 +38,6 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
   // Rotation state
   const isRotatingRef = useRef<boolean>(false);
-  const rotationStartAngleRef = useRef<number>(0);
-
-  // Fixed timestep for physics simulation
-  const fixedTimeStep = 1 / 60; // 60 fps
-  const maxSubSteps = 10; // Maximum sub steps to catch up if frame rate drops
-
-  // Convert page coordinates to physics world coordinates
-  const getPhysicsCoord = (pageX: number, pageY: number): [number, number] => {
-    const canvas = canvasRef.current;
-    if (!canvas) return [0, 0];
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (pageX - rect.left) / props.pixelsPerMeter;
-    const y =
-      props.height / props.pixelsPerMeter -
-      (pageY - rect.top) / props.pixelsPerMeter;
-    return [x, y];
-  };
 
   // Find the body under the given point
   const getBodyAtPoint = (worldPoint: [number, number]): p2.Body | null => {
@@ -266,13 +243,13 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       // Determine color based on body type and selection state
       let color;
       if (!props.readOnly && selectedBodyRef.current === body) {
-        color = colors.selected; // Highlight selected body
+        color = COLORS.selected; // Highlight selected body
       } else if (body.type === p2.Body.STATIC) {
-        color = colors.static;
+        color = COLORS.static;
       } else if (body.type === p2.Body.KINEMATIC) {
-        color = colors.kinematic;
+        color = COLORS.kinematic;
       } else {
-        color = colors.dynamic;
+        color = COLORS.dynamic;
       }
 
       body.shapes.forEach((shape) => {
@@ -352,7 +329,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       ctx.beginPath();
       ctx.moveTo(bodyX, bodyY);
       ctx.lineTo(handleX, handleY);
-      ctx.strokeStyle = colors.rotationHandle;
+      ctx.strokeStyle = COLORS.rotationHandle;
       ctx.lineWidth = 0.02;
       ctx.stroke();
 
@@ -368,7 +345,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
       // Draw rotation handle
       ctx.beginPath();
       ctx.arc(handleX, handleY, ROTATION_HANDLE_RADIUS, 0, 2 * Math.PI);
-      ctx.fillStyle = colors.rotationHandle;
+      ctx.fillStyle = COLORS.rotationHandle;
       ctx.fill();
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 0.02;
@@ -390,7 +367,7 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
 
     // Step the physics world forward
     if (props.worldRef.current) {
-      props.worldRef.current.step(fixedTimeStep, deltaTime, maxSubSteps);
+      props.worldRef.current.step(FIXED_TIME_STEP, deltaTime, MAX_SUB_STEPS);
 
       // Call onAfterStep callback if provided
       if (props.onAfterStep) {
@@ -412,12 +389,24 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
   };
 
   const handleMouseDown = (e: MouseEvent) => {
-    const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
+    const worldPoint = getPhysicsCoord(
+      canvasRef,
+      e.clientX,
+      e.clientY,
+      props.pixelsPerMeter,
+      props.height
+    );
     startInteraction(worldPoint);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    const worldPoint = getPhysicsCoord(e.clientX, e.clientY);
+    const worldPoint = getPhysicsCoord(
+      canvasRef,
+      e.clientX,
+      e.clientY,
+      props.pixelsPerMeter,
+      props.height
+    );
     updateInteraction(worldPoint);
   };
 
@@ -429,7 +418,13 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
   const handleTouchStart = (e: TouchEvent) => {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
-      const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
+      const worldPoint = getPhysicsCoord(
+        canvasRef,
+        touch.clientX,
+        touch.clientY,
+        props.pixelsPerMeter,
+        props.height
+      );
       startInteraction(worldPoint);
       e.preventDefault();
     }
@@ -438,7 +433,13 @@ export default function PhysicsRenderer(props: PhysicsRendererProps) {
   const handleTouchMove = (e: TouchEvent) => {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
-      const worldPoint = getPhysicsCoord(touch.clientX, touch.clientY);
+      const worldPoint = getPhysicsCoord(
+        canvasRef,
+        touch.clientX,
+        touch.clientY,
+        props.pixelsPerMeter,
+        props.height
+      );
       updateInteraction(worldPoint);
       e.preventDefault();
     }

@@ -1,15 +1,32 @@
 import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
-import PhysicsRenderer from "./PhysicsRenderer";
-import LETTER_POLYGONS from "../logic/letters";
+import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import { IDimensions, IPoints, LETTERS } from "../logic/interfaces";
+import { IDimensions, LETTERS } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
-import { createLetterFromPoints, handleRotation, handleRotationEnd, handleRotationStart, velocityToSpeed, WOOD_MATERIAL } from "../logic/p2-util";
-import { computeMetersPerPixel, computePixelsPerMeter } from "../logic/render-util";
-import { AVG_LETTER_WIDTH_PIXELS } from "../logic/letter-util";
-import { ANGULAR_SPEED_THRESHOLD, CANVAS_WIDTH_METERS, DESIRED_LETTER_WIDTH_METERS, LINEAR_SPEED_THRESHOLD, MIN_SECONDS_STABLE } from "../logic/game-config";
-import { addLetterToWorld, allLettersStill, cloneBodyToWorld, createWorld, runSimulation, updateHighestPoint } from "../logic/game-util";
+import {
+  handleRotation,
+  handleRotationEnd,
+  handleRotationStart,
+  velocityToSpeed,
+  WOOD_MATERIAL,
+} from "../logic/p2-util";
+import { computePixelsPerMeter } from "../logic/render-util";
+import {
+  ANGULAR_SPEED_THRESHOLD,
+  CANVAS_WIDTH_METERS,
+  DESIRED_LETTER_WIDTH_METERS,
+  LINEAR_SPEED_THRESHOLD,
+  MIN_SECONDS_STABLE,
+} from "../logic/game-config";
+import {
+  addLetterToWorld,
+  allLettersStill,
+  cloneBodyToWorld,
+  createWorld,
+  runSimulation,
+  updateHighestPoint,
+} from "../logic/game-util";
 
 export default function Game() {
   /** REFS */
@@ -66,7 +83,11 @@ export default function Game() {
     if (!sandboxWorldRef.current || !canvasContainerDimensions) {
       return;
     }
-    addLetterToWorld(letter, sandboxWorldRef.current, canvasContainerDimensions);
+    addLetterToWorld(
+      letter,
+      sandboxWorldRef.current,
+      canvasContainerDimensions
+    );
     setLettersUsed(new Set([...lettersUsed, letter]));
   };
 
@@ -135,7 +156,7 @@ export default function Game() {
 
   const runSimulationCallback = () => {
     runSimulation(sandboxWorldRef, trialWorldRef);
-  }
+  };
 
   return (
     <div className={styles.pageOuterContainer}>
@@ -153,7 +174,10 @@ export default function Game() {
           </div>
           <div className={styles.canvasesAndControls}>
             <div className={styles.controlsContainer}>
-              <button onClick={runSimulationCallback} className={styles.controlsButton}>
+              <button
+                onClick={runSimulationCallback}
+                className={styles.controlsButton}
+              >
                 <div className={styles.buttonText}>RUN TRIAL</div>
                 <div className={styles.shortcut}>[enter]</div>
               </button>
@@ -175,7 +199,7 @@ export default function Game() {
               {sandboxWorldRef.current &&
                 canvasContainerDimensions &&
                 pixelsPerMeter && (
-                  <PhysicsRenderer
+                  <Canvas
                     worldRef={sandboxWorldRef as RefObject<p2.World>}
                     width={canvasContainerDimensions?.width}
                     height={canvasContainerDimensions?.height}
@@ -190,7 +214,7 @@ export default function Game() {
               {trialWorldRef.current &&
                 canvasContainerDimensions &&
                 pixelsPerMeter && (
-                  <PhysicsRenderer
+                  <Canvas
                     worldRef={trialWorldRef as RefObject<p2.World>}
                     width={canvasContainerDimensions?.width}
                     height={canvasContainerDimensions?.height}

@@ -2,7 +2,7 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import { IDimensions, LETTERS } from "../logic/interfaces";
+import { IDimensions, ILetterPolygon, LETTERS } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
 import {
   handleRotation,
@@ -23,6 +23,7 @@ import {
   runSimulation,
   updateHighestPoint,
 } from "../logic/game-util";
+import LETTER_POLYGONS from "../logic/letters";
 
 export default function Game() {
   /** REFS */
@@ -75,16 +76,19 @@ export default function Game() {
     }
   };
 
-  const addLetterToTrial = (letter: LETTERS) => {
+  const addLetterToTrial = (
+    letterEnum: LETTERS,
+    letterPolygon: ILetterPolygon
+  ) => {
     if (!sandboxWorldRef.current || !canvasContainerDimensions) {
       return;
     }
     const letterId = addLetterToWorld(
-      letter,
+      letterPolygon,
       sandboxWorldRef.current,
       canvasContainerDimensions
     );
-    setLettersInUse({ ...lettersInUse, [letterId]: letter });
+    setLettersInUse({ ...lettersInUse, [letterId]: letterEnum });
   };
 
   const handleKeypress = (event: KeyboardEvent) => {
@@ -94,9 +98,12 @@ export default function Game() {
     const letter = event.key.toUpperCase();
     if (Object.keys(LETTERS).includes(letter)) {
       const letterEnum = LETTERS[letter as keyof typeof LETTERS];
-      addLetterToTrial(letterEnum);
+      const letterPolygon = LETTER_POLYGONS[letterEnum];
+      addLetterToTrial(letterEnum, letterPolygon);
     }
   };
+
+  // console.log(letterToExteriorIndex);
 
   /** EFFECTS */
 
@@ -163,7 +170,8 @@ export default function Game() {
               <LetterButton
                 letter={letter}
                 used={Object.values(lettersInUse).includes(letter)}
-                onClick={() => addLetterToTrial(letter)}
+                // onClick={() => addLetterToTrial(letter)}
+                onClick={() => {}}
                 key={letter}
               />
             ))}

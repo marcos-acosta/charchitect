@@ -19,6 +19,7 @@ import {
   startInteraction,
   updateInteraction,
 } from "../logic/interaction-util";
+import { LETTERS } from "../logic/interfaces";
 
 interface CanvasProps {
   worldRef: RefObject<p2.World>;
@@ -172,7 +173,7 @@ export default function Canvas(props: CanvasProps) {
       ctx.translate(body.position[0], body.position[1]);
       ctx.rotate(body.angle);
 
-      body.shapes.forEach((shape) => {
+      body.shapes.forEach((shape, index) => {
         const shapeOffset = shape.position;
         const shapeAngle = shape.angle;
         ctx.save();
@@ -185,10 +186,11 @@ export default function Canvas(props: CanvasProps) {
           drawBox(ctx, width, height);
         } else if (shape instanceof p2.Convex) {
           /** POLYGON */
+          // const color = `rgb(${Math.floor(Math.random() * 255)}, ${Math.floor(
+          //   Math.random() * 255
+          // )}, ${Math.floor(Math.random() * 255)})`;
           const color =
-            !props.readOnly && selectedBodyRef.current === body
-              ? COLORS.selected
-              : COLORS.dynamic;
+            selectedBodyRef.current === body ? COLORS.selected : COLORS.dynamic;
           drawPolygon(shape, ctx, color);
         }
         ctx.restore(); // Restore after each shape
@@ -294,7 +296,7 @@ export default function Canvas(props: CanvasProps) {
         }
       };
     }
-  }, [props.width, props.height, props.readOnly]);
+  }, [props.width, props.height]);
 
   return (
     <canvas

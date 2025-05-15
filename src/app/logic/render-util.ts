@@ -1,5 +1,7 @@
 import { RefObject } from "react";
 import * as p2 from "p2-es";
+import { IPoints } from "./interfaces";
+
 // Colors for different body types
 export const COLORS = {
   dynamic: "#000",
@@ -10,6 +12,7 @@ export const COLORS = {
   rotationHandle: "#F04747",
   circleOutline: "rgba(150, 150, 150, 0.5)",
   handleOutline: "#fff",
+  background: "#fff",
 };
 
 // Constants for rotation handle
@@ -82,20 +85,6 @@ export const drawBox = (
   ctx.lineWidth = 0.02;
   ctx.strokeRect(-width / 2, -height / 2, width, height);
 };
-
-// export const drawCircle = (
-//   ctx: CanvasRenderingContext2D,
-//   radius: number,
-//   color: string
-// ) => {
-//   ctx.beginPath();
-//   ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-//   ctx.fillStyle = color;
-//   ctx.fill();
-//   ctx.strokeStyle = color;
-//   ctx.lineWidth = 0.02;
-//   ctx.stroke();
-// };
 
 export const drawPolygon = (
   shape: p2.Convex,

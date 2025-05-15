@@ -18,18 +18,6 @@ const decomposePolygon = (polygon: IPoints): IPolygons => {
   return convexes as IPolygons;
 };
 
-const makeRelativeToOrigin = (polygon: IPoints, origin: IPoint) => {
-  return polygon.map((point) => [point[0] - origin[0], point[1] - origin[1]]);
-};
-
-const findCenterOfPoints = (points: IPoints): IPoint => {
-  const sumX = points.reduce((sum, point) => sum + point[0], 0);
-  const sumY = points.reduce((sum, point) => sum + point[1], 0);
-  const avgX = sumX / points.length;
-  const avgY = sumY / points.length;
-  return [avgX, avgY];
-};
-
 export const createLetterFromPoints = (
   polygons: IPolygons,
   position: IPoint,
@@ -47,21 +35,24 @@ export const createLetterFromPoints = (
     type: p2.Body.DYNAMIC,
   });
   polygons.forEach((polygon) => {
+    const cm = p2.vec2.create();
     decomposePolygon(normalizePoints(polygon, normalizeFactor)).forEach(
-      (polygon: IPoints) => {
-        const polygonCenter = findCenterOfPoints(polygon);
-        const relativeToOrigin = makeRelativeToOrigin(polygon, polygonCenter);
-        concaveBody.addShape(
-          new p2.Convex({ vertices: relativeToOrigin }),
-          polygonCenter,
-          0
-        );
+      (decomposedPolygon: IPoints) => {
+        let c = new p2.Convex({
+          vertices: decomposedPolygon,
+          material: material,
+        });
+        for (let i = 0; i < c.vertices.length; i++) {
+          const v = c.vertices[i];
+          p2.vec2.subtract(v, v, c.centerOfMass);
+        }
+        p2.vec2.copy(cm, c.centerOfMass);
+        c = new p2.Convex({ vertices: c.vertices });
+        concaveBody.addShape(c, cm);
       }
     );
+    concaveBody.adjustCenterOfMass();
   });
-  concaveBody.updateMassProperties();
-  concaveBody.adjustCenterOfMass();
-  concaveBody.shapes.forEach((shape) => (shape.material = material));
 
   world.addBody(concaveBody);
   return concaveBody.id;

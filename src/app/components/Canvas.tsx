@@ -170,7 +170,7 @@ export default function Canvas(props: CanvasProps) {
       if (mouseBodyRef.current && body === mouseBodyRef.current) return;
 
       ctx.save();
-      ctx.translate(body.position[0], body.position[1]);
+      ctx.translate(body.interpolatedPosition[0], body.interpolatedPosition[1]);
       ctx.rotate(body.angle);
 
       body.shapes.forEach((shape, index) => {
@@ -201,8 +201,8 @@ export default function Canvas(props: CanvasProps) {
     // Only draw rotation handle in interactive mode (not readOnly)
     if (!props.readOnly && selectedBodyRef.current) {
       const body = selectedBodyRef.current;
-      const bodyX = body.position[0];
-      const bodyY = body.position[1];
+      const bodyX = body.interpolatedPosition[0];
+      const bodyY = body.interpolatedPosition[1];
 
       // Calculate handle position
       const handleX = bodyX + Math.cos(body.angle) * ROTATION_HANDLE_DISTANCE;

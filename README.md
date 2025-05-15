@@ -1,0 +1,5 @@
+# Charchitect
+
+Some time ago, I saw a meme (I wish I could find it) about the structural integrity of different letters, like how the letter `A` seems like it would support a lot of weight with that triangular frame, whereas a letter like `P` is a little top-heavy. This got me thinking: if you were going to build a structure in two dimensions using all 26 letters of the alphabet (say, uppercase Times New Roman letters), what's the tallest stable structure you could build?
+
+Originally, I thought I could solve this problem algorithmically, but (unsurprisingly) it got extremely complex very quickly. I then tried to formulate the problem as a reinforcement learning problem, but defining a reasonable reward function proved very difficult. So, in the end, I decided to make it a human challenge instead.

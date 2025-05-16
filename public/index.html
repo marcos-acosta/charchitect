@@ -169,24 +169,24 @@
           setStatus(
             `Converting path to vertices (sample count: ${sampleCount})...`
           );
-          let pathLength = pathElement.getTotalLength();
-          let vertices = [];
-          var i = 0;
-          while (i < pathLength) {
-            let arr = pathElement.getPointAtLength(i);
-            vertices.push({ x: arr.x, y: arr.y });
-            i += sampleCount;
-          }
+          // let pathLength = pathElement.getTotalLength();
+          // let vertices = [];
+          // var i = 0;
+          // while (i < pathLength) {
+          //   let arr = pathElement.getPointAtLength(i);
+          //   vertices.push({ x: arr.x, y: arr.y });
+          //   i += sampleCount;
+          // }
+          // const rawVertices = vertices;
           // console.log(
           //   "USE THIS:",
           //   vertices.map((point) => [point.x, point.y])
           // );
 
-          // const rawVertices = Matter.Svg.pathToVertices(
-          //   pathElement,
-          //   sampleCount
-          // );
-          const rawVertices = vertices;
+          const rawVertices = Matter.Svg.pathToVertices(
+            pathElement,
+            sampleCount
+          );
           if (!rawVertices || rawVertices.length === 0) {
             throw new Error("Matter.Svg.pathToVertices returned no vertices.");
           }

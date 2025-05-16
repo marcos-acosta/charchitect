@@ -51,8 +51,8 @@ export const createLetterFromPoints = (
         concaveBody.addShape(c, cm);
       }
     );
-    concaveBody.adjustCenterOfMass();
   });
+  concaveBody.adjustCenterOfMass();
 
   world.addBody(concaveBody);
   return concaveBody.id;

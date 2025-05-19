@@ -21,6 +21,7 @@ import {
   allLettersStill,
   createWorld,
   runSimulation,
+  startShakeTest,
   updateHighestPoint,
 } from "../logic/game-util";
 import LETTER_POLYGONS from "../logic/letters";
@@ -39,7 +40,13 @@ export default function Game() {
   const allLettersStillRef = useRef<boolean>(true);
   // Timeout to detect stability
   const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Ref to track the ground in the trial world
+  const trialGroundRef = useRef<p2.Body>(null);
   /** STATES */
+  // Whether any gravity trial has been run
+  const [gravityTrialRun, setGravityTrialRun] = useState(false);
+  // Whether the stability test has started
+  const [stabilityTestStarted, setStabilityTestStarted] = useState(false);
   // The current canvas container dimensions
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
@@ -71,8 +78,10 @@ export default function Game() {
     });
 
     if (sandboxWorldRef.current === null) {
-      sandboxWorldRef.current = createWorld(false);
-      trialWorldRef.current = createWorld(true);
+      sandboxWorldRef.current = createWorld(false)[0];
+      const [trialWorld, trialGroundBody] = createWorld(true);
+      trialWorldRef.current = trialWorld;
+      trialGroundRef.current = trialGroundBody;
     }
   };
 
@@ -100,7 +109,13 @@ export default function Game() {
     }
   };
 
-  // console.log(letterToExteriorIndex);
+  const passGravityTrial = () => {
+    setStabilized(true);
+  };
+
+  const unpassGravityTrial = () => {
+    setStabilized(false);
+  };
 
   /** EFFECTS */
 
@@ -133,7 +148,7 @@ export default function Game() {
         setAllLettersStillState(allLettersStillResult);
         if (allLettersStillResult) {
           const timeout: NodeJS.Timeout = setTimeout(
-            () => setStabilized(true),
+            passGravityTrial,
             MIN_SECONDS_STABLE * 1000
           );
           stabilityTimeoutRef.current = timeout;
@@ -142,7 +157,7 @@ export default function Game() {
             clearTimeout(stabilityTimeoutRef.current);
           }
           stabilityTimeoutRef.current = null;
-          setStabilized(false);
+          unpassGravityTrial();
         }
       }
       allLettersStillRef.current = allLettersStillResult;
@@ -155,7 +170,18 @@ export default function Game() {
   };
 
   const runSimulationCallback = () => {
+    if (!gravityTrialRun) {
+      setGravityTrialRun(true);
+    }
     runSimulation(sandboxWorldRef, trialWorldRef);
+    setStabilityTestStarted(false);
+  };
+
+  const runShakeTestCallback = () => {
+    if (trialGroundRef.current) {
+      startShakeTest(trialGroundRef.current);
+      setStabilityTestStarted(true);
+    }
   };
 
   return (
@@ -182,6 +208,24 @@ export default function Game() {
                 <div className={styles.buttonText}>RUN TRIAL</div>
                 <div className={styles.shortcut}>[enter]</div>
               </button>
+              <button
+                onClick={runShakeTestCallback}
+                className={styles.controlsButton}
+                disabled={
+                  !(!stabilityTestStarted && stabilized && gravityTrialRun)
+                }
+              >
+                <div className={styles.buttonText}>RUN STABILITY TEST</div>
+              </button>
+              <button
+                onClick={() => {}}
+                className={styles.controlsButton}
+                disabled={
+                  !(stabilityTestStarted && stabilized && gravityTrialRun)
+                }
+              >
+                <div className={styles.buttonText}>SUBMIT</div>
+              </button>
               <div className={styles.statusDivider}>
                 <hr />
               </div>
@@ -193,6 +237,11 @@ export default function Game() {
                 </div>
                 <div className={styles.fullyStableContainer}>
                   {stabilized ? "Fully stabilized" : "Not yet stabilized"}
+                </div>
+                <div className={styles.stabilityTestStatusContainer}>
+                  {stabilityTestStarted
+                    ? "Stability test started"
+                    : "Stability test not started"}
                 </div>
               </div>
             </div>

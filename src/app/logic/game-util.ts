@@ -2,6 +2,14 @@ import * as p2 from "p2-es";
 import {
   CANVAS_WIDTH_METERS,
   DESIRED_LETTER_WIDTH_METERS,
+  GROUND_HEIGHT_METERS,
+  GROUND_MASS,
+  GROUND_THICKNESS_METERS,
+  PUSH_VELOCITY,
+  SPRING_DAMPING,
+  SPRING_HOOK_WIDTH_METERS,
+  SPRING_STIFFNESS,
+  WOOD_MATERIAL_FRICTION,
 } from "./game-config";
 import {
   createLetterFromPoints,
@@ -13,47 +21,68 @@ import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
 import { RefObject } from "react";
 
-export const createWorld = (trialCanvas = false) => {
+export const createWorld = (trialCanvas = false): [p2.World, p2.Body] => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
     gravity: [0, trialCanvas ? -9.81 : 0],
   });
 
+  const GROUND_WIDTH = CANVAS_WIDTH_METERS * 0.9;
+  const REMAINING_WIDTH = CANVAS_WIDTH_METERS - GROUND_WIDTH;
   // Add a ground plane
   const groundBody = new p2.Body({
-    type: p2.Body.STATIC,
-    position: [CANVAS_WIDTH_METERS / 2, -0.25],
+    type: p2.Body.DYNAMIC,
+    mass: GROUND_MASS,
+    position: [CANVAS_WIDTH_METERS / 2, GROUND_HEIGHT_METERS],
+    // fixedX: true,
+    fixedY: true,
+    fixedRotation: true,
   });
-  const groundShape = new p2.Box({ width: CANVAS_WIDTH_METERS, height: 1 });
+  const groundShape = new p2.Box({
+    width: GROUND_WIDTH,
+    height: GROUND_THICKNESS_METERS,
+  });
   groundBody.addShape(groundShape);
   newWorld.addBody(groundBody);
+  // Add spring hook
+  const springHook = new p2.Body({
+    type: p2.Body.STATIC,
+    position: [
+      CANVAS_WIDTH_METERS + SPRING_HOOK_WIDTH_METERS / 2,
+      GROUND_HEIGHT_METERS,
+    ],
+  });
+  const springShape = new p2.Box({
+    width: SPRING_HOOK_WIDTH_METERS,
+    height: SPRING_HOOK_WIDTH_METERS,
+  });
+  springHook.addShape(springShape);
+  newWorld.addBody(springHook);
+  // Add spring
+  const spring = new p2.LinearSpring(groundBody, springHook, {
+    stiffness: SPRING_STIFFNESS,
+    damping: SPRING_DAMPING,
+    localAnchorA: [GROUND_WIDTH / 2, 0],
+    localAnchorB: [-SPRING_HOOK_WIDTH_METERS / 2, 0],
+    restLength: REMAINING_WIDTH / 2,
+  });
+  newWorld.addSpring(spring);
 
   const frictionContactMaterial = new p2.ContactMaterial(
     WOOD_MATERIAL,
     WOOD_MATERIAL,
     {
-      friction: 10,
-      stiffness: Math.max(),
+      friction: WOOD_MATERIAL_FRICTION,
+      stiffness: 1e9,
     }
   );
   newWorld.addContactMaterial(frictionContactMaterial);
 
-  return newWorld;
+  return [newWorld, groundBody];
 };
 
 // Function to clone a body from one world to another
-export const cloneBodyToWorld = (
-  body: p2.Body,
-  targetWorld: p2.World
-): p2.Body => {
-  // Skip cloning static ground bodies
-  if (
-    body.type === p2.Body.STATIC &&
-    body.shapes.some((s) => s instanceof p2.Box && (s as p2.Box).width > 10)
-  ) {
-    return body;
-  }
-
+export const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World) => {
   // Create a new body with the same properties
   const newBody = new p2.Body({
     mass: body.mass,
@@ -61,10 +90,17 @@ export const cloneBodyToWorld = (
     angle: body.angle,
     velocity: [0, 0],
     angularVelocity: 0,
-    damping: 0.01, // Set default damping for trial world
-    angularDamping: 0.01, // Set default angular damping for trial world
+    damping: 0.01,
+    angularDamping: 0.01,
     type: body.type,
+    fixedX: body.fixedX,
+    fixedY: body.fixedY,
+    fixedRotation: body.fixedRotation,
   });
+
+  if (body.shapes[0] && body.shapes[0].type === p2.Shape.BOX) {
+    return;
+  }
 
   // Clone all shapes from the original body
   body.shapes.forEach((shape) => {
@@ -82,7 +118,6 @@ export const cloneBodyToWorld = (
 
   // Add the new body to the target world
   targetWorld.addBody(newBody);
-  return newBody;
 };
 
 export const allLettersStill = (
@@ -159,12 +194,11 @@ export const runSimulation = (
 
   if (!sandboxWorld || !trialWorld) return;
 
-  // Clear existing non-ground bodies from trial world
+  // Clear existing non-static bodies from trial world
   const bodiesToRemove = [];
   for (let i = 0; i < trialWorld.bodies.length; i++) {
     const body = trialWorld.bodies[i];
-    // Skip ground body
-    if (body.type === p2.Body.STATIC) {
+    if (body.shapes[0] && body.shapes[0].type === p2.Shape.BOX) {
       continue;
     }
     bodiesToRemove.push(body);
@@ -179,4 +213,11 @@ export const runSimulation = (
   sandboxWorld.bodies.forEach((body) => {
     cloneBodyToWorld(body, trialWorld);
   });
+
+  console.log(trialWorld.bodies.length);
+};
+
+export const startShakeTest = (body: p2.Body) => {
+  // body.applyImpulse([100, 0], body.position);
+  body.velocity[0] = PUSH_VELOCITY;
 };

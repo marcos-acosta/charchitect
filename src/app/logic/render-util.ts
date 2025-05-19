@@ -1,6 +1,5 @@
 import { RefObject } from "react";
 import * as p2 from "p2-es";
-import { IPoints } from "./interfaces";
 
 // Colors for different body types
 export const COLORS = {

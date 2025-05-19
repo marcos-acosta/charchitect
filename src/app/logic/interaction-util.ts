@@ -102,7 +102,7 @@ export const startInteraction = (
       collideConnected: false,
     });
     // Set constraint parameters for smoother dragging
-    constraint.setStiffness(Math.max()); // Spring stiffness
+    constraint.setStiffness(Math.min()); // Spring stiffness
     constraint.setRelaxation(1); // Relaxation for soft constraint
     worldRef.current.addConstraint(constraint);
     mouseConstraintRef.current = constraint;

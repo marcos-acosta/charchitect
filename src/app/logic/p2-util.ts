@@ -13,7 +13,7 @@ const decomposePolygon = (polygon: IPoints): IPolygons => {
     p[i] = p2.vec2.clone(polygon[i]);
   }
   decomp.makeCCW(p as decomp.Polygon);
-  decomp.removeCollinearPoints(p as decomp.Polygon);
+  decomp.removeCollinearPoints(p as decomp.Polygon, 0.02);
   const convexes = decomp.quickDecomp(p as decomp.Polygon);
   return convexes as IPolygons;
 };

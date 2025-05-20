@@ -19,6 +19,7 @@ import {
   startInteraction,
   updateInteraction,
 } from "../logic/interaction-util";
+import { getBodyAtPoint } from "../logic/p2-util";
 
 interface CanvasProps {
   worldRef: RefObject<p2.World>;
@@ -32,6 +33,8 @@ interface CanvasProps {
   onRotationEnd?: (body: p2.Body) => void;
   highestPoint?: RefObject<number>; // Optional highest point to display
   onAfterStep?: () => void; // Callback after each physics step
+  panOffset: [number, number]; // Current pan offset
+  onPanChange: (fn: (offset: [number, number]) => [number, number]) => void; // Callback to update pan offset
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -44,6 +47,8 @@ export default function Canvas(props: CanvasProps) {
   const mouseBodyRef = useRef<p2.Body | null>(null);
   const selectedBodyRef = useRef<p2.Body | null>(null);
   const isDraggingRef = useRef<boolean>(false);
+  const isPanningRef = useRef<boolean>(false);
+  const lastPanPointRef = useRef<[number, number] | null>(null);
 
   // Rotation state
   const isRotatingRef = useRef<boolean>(false);
@@ -100,10 +105,37 @@ export default function Canvas(props: CanvasProps) {
       props.pixelsPerMeter,
       props.height
     );
-    _startInteraction(worldPoint);
+
+    // Check if we clicked on a body
+    const hitBody = getBodyAtPoint(props.worldRef, worldPoint);
+
+    if (hitBody) {
+      _startInteraction(worldPoint);
+    } else {
+      // Start panning
+      isPanningRef.current = true;
+      lastPanPointRef.current = [e.clientX, e.clientY];
+    }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
+    if (isPanningRef.current && lastPanPointRef.current) {
+      // Calculate pan delta in world coordinates
+      const dx =
+        (e.clientX - lastPanPointRef.current[0]) / props.pixelsPerMeter;
+      const dy =
+        -(e.clientY - lastPanPointRef.current[1]) / props.pixelsPerMeter;
+
+      // Update pan offset
+      props.onPanChange((panOffset: [number, number]) => [
+        panOffset[0] + dx,
+        panOffset[1] + dy,
+      ]);
+
+      lastPanPointRef.current = [e.clientX, e.clientY];
+      return;
+    }
+
     const worldPoint = getPhysicsCoord(
       canvasRef,
       e.clientX,
@@ -115,7 +147,12 @@ export default function Canvas(props: CanvasProps) {
   };
 
   const handleMouseUp = () => {
-    _endInteraction();
+    if (isPanningRef.current) {
+      isPanningRef.current = false;
+      lastPanPointRef.current = null;
+    } else {
+      _endInteraction();
+    }
   };
 
   // Add touch support for mobile
@@ -129,7 +166,17 @@ export default function Canvas(props: CanvasProps) {
         props.pixelsPerMeter,
         props.height
       );
-      _startInteraction(worldPoint);
+
+      // Check if we touched a body
+      const hitBody = getBodyAtPoint(props.worldRef, worldPoint);
+
+      if (hitBody) {
+        _startInteraction(worldPoint);
+      } else {
+        // Start panning
+        isPanningRef.current = true;
+        lastPanPointRef.current = [touch.clientX, touch.clientY];
+      }
       e.preventDefault();
     }
   };
@@ -137,6 +184,25 @@ export default function Canvas(props: CanvasProps) {
   const handleTouchMove = (e: TouchEvent) => {
     if (e.touches.length > 0) {
       const touch = e.touches[0];
+
+      if (isPanningRef.current && lastPanPointRef.current) {
+        // Calculate pan delta in world coordinates
+        const dx =
+          (touch.clientX - lastPanPointRef.current[0]) / props.pixelsPerMeter;
+        const dy =
+          -(touch.clientY - lastPanPointRef.current[1]) / props.pixelsPerMeter;
+
+        // Update pan offset
+        props.onPanChange((panOffset: [number, number]) => [
+          panOffset[0] + dx,
+          panOffset[1] + dy,
+        ]);
+
+        lastPanPointRef.current = [touch.clientX, touch.clientY];
+        e.preventDefault();
+        return;
+      }
+
       const worldPoint = getPhysicsCoord(
         canvasRef,
         touch.clientX,
@@ -150,12 +216,20 @@ export default function Canvas(props: CanvasProps) {
   };
 
   const handleTouchEnd = (e: TouchEvent) => {
-    _endInteraction();
+    if (isPanningRef.current) {
+      isPanningRef.current = false;
+      lastPanPointRef.current = null;
+    } else {
+      _endInteraction();
+    }
     e.preventDefault();
   };
 
   const drawWorld = (ctx: CanvasRenderingContext2D) => {
     setUpCanvas(ctx, props.width, props.height, props.pixelsPerMeter);
+
+    // Apply pan offset
+    ctx.translate(props.panOffset[0], props.panOffset[1]);
 
     // Draw highest point line if provided
     if (props.highestPoint && props.highestPoint.current > 0) {
@@ -294,7 +368,7 @@ export default function Canvas(props: CanvasProps) {
         }
       };
     }
-  }, [props.width, props.height]);
+  }, [props.width, props.height, props.panOffset]);
 
   return (
     <canvas

@@ -98,7 +98,14 @@ export const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World) => {
     fixedRotation: body.fixedRotation,
   });
 
-  if (body.shapes[0] && body.shapes[0].type === p2.Shape.BOX) {
+  // Only clone bodies with convex shape
+  if (
+    !(
+      body.shapes.length &&
+      body.shapes[0] &&
+      body.shapes[0].type === p2.Shape.CONVEX
+    )
+  ) {
     return;
   }
 
@@ -213,8 +220,6 @@ export const runSimulation = (
   sandboxWorld.bodies.forEach((body) => {
     cloneBodyToWorld(body, trialWorld);
   });
-
-  console.log(trialWorld.bodies.length);
 };
 
 export const startShakeTest = (body: p2.Body) => {

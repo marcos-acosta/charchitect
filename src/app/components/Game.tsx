@@ -56,6 +56,8 @@ export default function Game() {
   const [allLettersStillState, setAllLettersStillState] = useState(true);
   // Whether the letters have been still for some time
   const [stabilized, setStabilized] = useState(true);
+  // Add panning state
+  const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -226,6 +228,12 @@ export default function Game() {
               >
                 <div className={styles.buttonText}>SUBMIT</div>
               </button>
+              <button
+                onClick={() => setPanOffset([0, 0])}
+                className={styles.controlsButton}
+              >
+                <div className={styles.buttonText}>RESET VIEW</div>
+              </button>
               <div className={styles.statusDivider}>
                 <hr />
               </div>
@@ -257,6 +265,8 @@ export default function Game() {
                     onRotationStart={handleRotationStart}
                     onRotation={handleRotation}
                     onRotationEnd={handleRotationEnd}
+                    panOffset={panOffset}
+                    onPanChange={setPanOffset}
                   />
                 )}
             </div>
@@ -272,6 +282,8 @@ export default function Game() {
                     readOnly={true} // Make trial canvas read-only
                     highestPoint={highestPointRef} // Pass the highest point
                     onAfterStep={afterStep}
+                    panOffset={panOffset}
+                    onPanChange={setPanOffset}
                   />
                 )}
             </div>

@@ -4,11 +4,12 @@ import {
   ROTATION_HANDLE_DISTANCE,
   ROTATION_HANDLE_HIT_RADIUS,
 } from "./render-util";
-import { getBodyAtPoint } from "./p2-util";
+import { getBodyAtPoint, isLetter } from "./p2-util";
 
 // Check if a point is near the rotation handle
 const isNearRotationHandle = (
   worldPoint: [number, number],
+  panOffset: [number, number],
   selectedBodyRef: RefObject<p2.Body | null>
 ): boolean => {
   if (!selectedBodyRef.current) return false;
@@ -22,8 +23,8 @@ const isNearRotationHandle = (
     body.position[1] + Math.sin(body.angle) * ROTATION_HANDLE_DISTANCE;
 
   // Calculate distance between point and handle
-  const dx = worldPoint[0] - handleX;
-  const dy = worldPoint[1] - handleY;
+  const dx = worldPoint[0] - handleX - panOffset[0];
+  const dy = worldPoint[1] - handleY - panOffset[1];
   const distance = Math.sqrt(dx * dx + dy * dy);
 
   return distance <= ROTATION_HANDLE_HIT_RADIUS;
@@ -32,10 +33,11 @@ const isNearRotationHandle = (
 // Calculate angle between body center and point
 const calculateAngle = (
   bodyPosition: [number, number],
-  point: [number, number]
+  point: [number, number],
+  panOffset: [number, number]
 ): number => {
-  const dx = point[0] - bodyPosition[0];
-  const dy = point[1] - bodyPosition[1];
+  const dx = point[0] - bodyPosition[0] - panOffset[0];
+  const dy = point[1] - bodyPosition[1] - panOffset[1];
   return Math.atan2(dy, dx);
 };
 
@@ -58,6 +60,8 @@ export const initMouseInteraction = (
 // Start drag or rotation
 export const startInteraction = (
   worldPoint: [number, number],
+  panOffset: [number, number],
+  mouseEvent: MouseEvent | Touch,
   readOnly: boolean,
   worldRef: RefObject<p2.World | null>,
   mouseBodyRef: RefObject<p2.Body | null>,
@@ -65,7 +69,8 @@ export const startInteraction = (
   selectedBodyRef: RefObject<p2.Body | null>,
   isRotatingRef: RefObject<boolean>,
   isDraggingRef: RefObject<boolean>,
-  onRotationStart?: (body: p2.Body) => void,
+  isPanningRef: RefObject<boolean>,
+  lastPanPointRef: RefObject<[number, number] | null>,
   onObjectSelected?: (body: p2.Body | null) => void
 ) => {
   // If readOnly, do nothing
@@ -76,19 +81,15 @@ export const startInteraction = (
   if (
     !readOnly &&
     selectedBodyRef.current &&
-    isNearRotationHandle(worldPoint, selectedBodyRef)
+    isNearRotationHandle(worldPoint, panOffset, selectedBodyRef)
   ) {
     // Start rotation mode
     isRotatingRef.current = true;
-    // Notify parent component about rotation start
-    if (onRotationStart) {
-      onRotationStart(selectedBodyRef.current);
-    }
     return;
   }
   // Otherwise check for body selection/dragging
-  const hitBody = getBodyAtPoint(worldRef, worldPoint);
-  if (!readOnly && hitBody && hitBody.type !== p2.Body.STATIC) {
+  const hitBody = getBodyAtPoint(worldRef, worldPoint, panOffset);
+  if (!readOnly && hitBody && isLetter(hitBody)) {
     selectedBodyRef.current = hitBody;
     isDraggingRef.current = true;
     // Notify parent component about the selected body
@@ -106,24 +107,32 @@ export const startInteraction = (
     constraint.setRelaxation(1); // Relaxation for soft constraint
     worldRef.current.addConstraint(constraint);
     mouseConstraintRef.current = constraint;
-  } else if (!hitBody) {
+  } else {
     // Clicked on empty space, deselect
     selectedBodyRef.current = null;
     if (onObjectSelected) {
       onObjectSelected(null);
     }
+    isPanningRef.current = true;
+    lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
 };
 
 // Update dragging or rotation
 export const updateInteraction = (
   worldPoint: [number, number],
+  panOffset: [number, number],
+  mouseEvent: MouseEvent | Touch,
   readOnly: boolean,
   mouseBodyRef: RefObject<p2.Body | null>,
   selectedBodyRef: RefObject<p2.Body | null>,
   isRotatingRef: RefObject<boolean>,
   isDraggingRef: RefObject<boolean>,
-  onRotation?: (body: p2.Body, angle: number) => void
+  isPanningRef: RefObject<boolean>,
+  lastPanPointRef: RefObject<[number, number] | null>,
+  pixelsPerMeter: number,
+  onRotation?: (body: p2.Body, angle: number) => void,
+  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void
 ) => {
   if (isRotatingRef.current && selectedBodyRef.current && !readOnly) {
     // We're in rotation mode
@@ -131,7 +140,8 @@ export const updateInteraction = (
     // Calculate new angle based on mouse position relative to body center
     const newAngle = calculateAngle(
       body.position as [number, number],
-      worldPoint
+      worldPoint,
+      panOffset
     );
     // Apply the rotation
     body.angle = newAngle;
@@ -143,6 +153,20 @@ export const updateInteraction = (
   } else if (isDraggingRef.current && mouseBodyRef.current && !readOnly) {
     // Regular dragging mode
     mouseBodyRef.current.position = worldPoint;
+  } else if (isPanningRef.current && lastPanPointRef.current && onPanChange) {
+    // Calculate pan delta in world coordinates
+    const dx =
+      (mouseEvent.clientX - lastPanPointRef.current[0]) / pixelsPerMeter;
+    const dy =
+      -(mouseEvent.clientY - lastPanPointRef.current[1]) / pixelsPerMeter;
+
+    // Update pan offset
+    onPanChange((panOffset: [number, number]) => [
+      panOffset[0] + dx,
+      panOffset[1] + dy,
+    ]);
+
+    lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
 };
 
@@ -153,16 +177,12 @@ export const endInteraction = (
   selectedBodyRef: RefObject<p2.Body | null>,
   isRotatingRef: RefObject<boolean>,
   isDraggingRef: RefObject<boolean>,
-  onRotationEnd?: (body: p2.Body) => void
+  isPanningRef: RefObject<boolean>,
+  lastPanPointRef: RefObject<[number, number] | null>
 ) => {
   if (isRotatingRef.current && selectedBodyRef.current) {
     // End rotation mode
     isRotatingRef.current = false;
-
-    // Notify parent component
-    if (onRotationEnd) {
-      onRotationEnd(selectedBodyRef.current);
-    }
   } else if (
     isDraggingRef.current &&
     worldRef.current &&
@@ -172,5 +192,8 @@ export const endInteraction = (
     worldRef.current.removeConstraint(mouseConstraintRef.current);
     mouseConstraintRef.current = null;
     isDraggingRef.current = false;
+  } else if (isPanningRef.current) {
+    isPanningRef.current = false;
+    lastPanPointRef.current = null;
   }
 };

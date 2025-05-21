@@ -4,11 +4,7 @@ import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
 import { IDimensions, IPolygons, LETTERS } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
-import {
-  handleRotation,
-  handleRotationEnd,
-  handleRotationStart,
-} from "../logic/p2-util";
+import { handleRotation } from "../logic/p2-util";
 import { computePixelsPerMeter } from "../logic/render-util";
 import {
   ANGULAR_SPEED_THRESHOLD,
@@ -262,9 +258,7 @@ export default function Game() {
                     width={canvasContainerDimensions?.width}
                     height={canvasContainerDimensions?.height}
                     pixelsPerMeter={pixelsPerMeter}
-                    onRotationStart={handleRotationStart}
                     onRotation={handleRotation}
-                    onRotationEnd={handleRotationEnd}
                     panOffset={panOffset}
                     onPanChange={setPanOffset}
                   />

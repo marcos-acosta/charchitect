@@ -61,13 +61,6 @@ export const createLetterFromPoints = (
 export const velocityToSpeed = (velocity: p2.Vec2) =>
   Math.sqrt(Math.pow(velocity[0], 2) + Math.pow(velocity[1], 2));
 
-// Handle rotation start
-export const handleRotationStart = (body: p2.Body) => {
-  if (body.type !== p2.Body.STATIC) {
-    body.type = p2.Body.KINEMATIC;
-  }
-};
-
 // Handle rotation update
 export const handleRotation = (body: p2.Body) => {
   if (body) {
@@ -75,21 +68,21 @@ export const handleRotation = (body: p2.Body) => {
   }
 };
 
-// Handle rotation end
-export const handleRotationEnd = (body: p2.Body) => {
-  body.type = p2.Body.DYNAMIC;
-};
-
 // Find the body under the given point
 export const getBodyAtPoint = (
   worldRef: RefObject<p2.World | null>,
-  worldPoint: [number, number]
+  worldPoint: [number, number],
+  panOffset: [number, number]
 ): p2.Body | null => {
   const world = worldRef.current;
   if (!world) return null;
 
   // Use world.hitTest to find bodies at the given point
-  const hitBodies = world.hitTest(worldPoint, world.bodies, 0.1);
+  const hitBodies = world.hitTest(
+    [worldPoint[0] - panOffset[0], worldPoint[1] - panOffset[1]],
+    world.bodies,
+    0.5
+  );
 
   if (hitBodies.length > 0) {
     // Filter out static bodies if you don't want to drag them
@@ -98,4 +91,8 @@ export const getBodyAtPoint = (
   }
 
   return null;
+};
+
+export const isLetter = (body: p2.Body) => {
+  return body.shapes.some((shape) => shape.type === p2.Shape.CONVEX);
 };

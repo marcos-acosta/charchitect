@@ -28,9 +28,7 @@ interface CanvasProps {
   pixelsPerMeter: number;
   readOnly?: boolean; // New prop to control if canvas is interactive
   onObjectSelected?: (body: p2.Body | null) => void;
-  onRotationStart?: (body: p2.Body) => void;
   onRotation?: (body: p2.Body, angle: number) => void;
-  onRotationEnd?: (body: p2.Body) => void;
   highestPoint?: RefObject<number>; // Optional highest point to display
   onAfterStep?: () => void; // Callback after each physics step
   panOffset: [number, number]; // Current pan offset
@@ -54,9 +52,14 @@ export default function Canvas(props: CanvasProps) {
   const isRotatingRef = useRef<boolean>(false);
 
   // Convenience functions
-  const _startInteraction = (worldPoint: [number, number]) => {
+  const _startInteraction = (
+    worldPoint: [number, number],
+    e: MouseEvent | Touch
+  ) => {
     startInteraction(
       worldPoint,
+      props.panOffset,
+      e,
       Boolean(props.readOnly),
       props.worldRef,
       mouseBodyRef,
@@ -64,20 +67,30 @@ export default function Canvas(props: CanvasProps) {
       selectedBodyRef,
       isRotatingRef,
       isDraggingRef,
-      props.onRotationStart,
+      isPanningRef,
+      lastPanPointRef,
       props.onObjectSelected
     );
   };
 
-  const _updateInteraction = (worldPoint: [number, number]) => {
+  const _updateInteraction = (
+    worldPoint: [number, number],
+    e: MouseEvent | Touch
+  ) => {
     updateInteraction(
       worldPoint,
+      props.panOffset,
+      e,
       Boolean(props.readOnly),
       mouseBodyRef,
       selectedBodyRef,
       isRotatingRef,
       isDraggingRef,
-      props.onRotation
+      isPanningRef,
+      lastPanPointRef,
+      props.pixelsPerMeter,
+      props.onRotation,
+      props.onPanChange
     );
   };
 
@@ -88,7 +101,8 @@ export default function Canvas(props: CanvasProps) {
       selectedBodyRef,
       isRotatingRef,
       isDraggingRef,
-      props.onRotationEnd
+      isPanningRef,
+      lastPanPointRef
     );
   };
 
@@ -105,35 +119,26 @@ export default function Canvas(props: CanvasProps) {
       props.height
     );
 
-    // Check if we clicked on a body
-    const hitBody = getBodyAtPoint(props.worldRef, worldPoint);
-
-    if (hitBody) {
-      _startInteraction(worldPoint);
-    } else {
-      // Start panning
-      isPanningRef.current = true;
-      lastPanPointRef.current = [e.clientX, e.clientY];
-    }
+    _startInteraction(worldPoint, e);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (isPanningRef.current && lastPanPointRef.current) {
-      // Calculate pan delta in world coordinates
-      const dx =
-        (e.clientX - lastPanPointRef.current[0]) / props.pixelsPerMeter;
-      const dy =
-        -(e.clientY - lastPanPointRef.current[1]) / props.pixelsPerMeter;
+    // if (isPanningRef.current && lastPanPointRef.current) {
+    //   // Calculate pan delta in world coordinates
+    //   const dx =
+    //     (e.clientX - lastPanPointRef.current[0]) / props.pixelsPerMeter;
+    //   const dy =
+    //     -(e.clientY - lastPanPointRef.current[1]) / props.pixelsPerMeter;
 
-      // Update pan offset
-      props.onPanChange((panOffset: [number, number]) => [
-        panOffset[0] + dx,
-        panOffset[1] + dy,
-      ]);
+    //   // Update pan offset
+    //   props.onPanChange((panOffset: [number, number]) => [
+    //     panOffset[0] + dx,
+    //     panOffset[1] + dy,
+    //   ]);
 
-      lastPanPointRef.current = [e.clientX, e.clientY];
-      return;
-    }
+    //   lastPanPointRef.current = [e.clientX, e.clientY];
+    //   return;
+    // }
 
     const worldPoint = getPhysicsCoord(
       canvasRef,
@@ -142,7 +147,7 @@ export default function Canvas(props: CanvasProps) {
       props.pixelsPerMeter,
       props.height
     );
-    _updateInteraction(worldPoint);
+    _updateInteraction(worldPoint, e);
   };
 
   const handleMouseUp = () => {
@@ -167,10 +172,14 @@ export default function Canvas(props: CanvasProps) {
       );
 
       // Check if we touched a body
-      const hitBody = getBodyAtPoint(props.worldRef, worldPoint);
+      const hitBody = getBodyAtPoint(
+        props.worldRef,
+        worldPoint,
+        props.panOffset
+      );
 
       if (hitBody) {
-        _startInteraction(worldPoint);
+        _startInteraction(worldPoint, touch);
       } else {
         // Start panning
         isPanningRef.current = true;
@@ -209,7 +218,7 @@ export default function Canvas(props: CanvasProps) {
         props.pixelsPerMeter,
         props.height
       );
-      _updateInteraction(worldPoint);
+      _updateInteraction(worldPoint, touch);
       e.preventDefault();
     }
   };
@@ -326,13 +335,13 @@ export default function Canvas(props: CanvasProps) {
 
       // Add event listeners
       canvas.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      canvas.addEventListener("mousemove", handleMouseMove);
+      canvas.addEventListener("mouseup", handleMouseUp);
 
       // Touch events
       canvas.addEventListener("touchstart", handleTouchStart);
-      window.addEventListener("touchmove", handleTouchMove);
-      window.addEventListener("touchend", handleTouchEnd);
+      canvas.addEventListener("touchmove", handleTouchMove);
+      canvas.addEventListener("touchend", handleTouchEnd);
 
       // Start the animation loop (for both interactive and read-only)
       requestRef.current = requestAnimationFrame(animate);
@@ -344,13 +353,13 @@ export default function Canvas(props: CanvasProps) {
         }
 
         canvas.removeEventListener("mousedown", handleMouseDown);
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
 
         // Touch events
         canvas.removeEventListener("touchstart", handleTouchStart);
-        window.removeEventListener("touchmove", handleTouchMove);
-        window.removeEventListener("touchend", handleTouchEnd);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+        canvas.removeEventListener("touchend", handleTouchEnd);
 
         // Clean up physics objects
         if (props.worldRef.current && mouseBodyRef.current) {

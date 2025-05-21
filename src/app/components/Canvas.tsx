@@ -83,7 +83,6 @@ export default function Canvas(props: CanvasProps) {
 
   const _endInteraction = () => {
     endInteraction(
-      Boolean(props.readOnly),
       props.worldRef,
       mouseConstraintRef,
       selectedBodyRef,
@@ -94,7 +93,7 @@ export default function Canvas(props: CanvasProps) {
   };
 
   const _initMouseInteraction = () => {
-    initMouseInteraction(props.worldRef, Boolean(props.readOnly), mouseBodyRef);
+    initMouseInteraction(props.worldRef, mouseBodyRef);
   };
 
   const handleMouseDown = (e: MouseEvent) => {
@@ -323,21 +322,17 @@ export default function Canvas(props: CanvasProps) {
       canvas.style.height = `${props.height}px`;
 
       // Initialize mouse physics body (only for interactive mode)
-      if (!props.readOnly) {
-        _initMouseInteraction();
-      }
+      _initMouseInteraction();
 
-      if (!props.readOnly) {
-        // Add event listeners
-        canvas.addEventListener("mousedown", handleMouseDown);
-        window.addEventListener("mousemove", handleMouseMove);
-        window.addEventListener("mouseup", handleMouseUp);
+      // Add event listeners
+      canvas.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
 
-        // Touch events
-        canvas.addEventListener("touchstart", handleTouchStart);
-        window.addEventListener("touchmove", handleTouchMove);
-        window.addEventListener("touchend", handleTouchEnd);
-      }
+      // Touch events
+      canvas.addEventListener("touchstart", handleTouchStart);
+      window.addEventListener("touchmove", handleTouchMove);
+      window.addEventListener("touchend", handleTouchEnd);
 
       // Start the animation loop (for both interactive and read-only)
       requestRef.current = requestAnimationFrame(animate);

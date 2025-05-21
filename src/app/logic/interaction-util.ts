@@ -42,10 +42,9 @@ const calculateAngle = (
 // Setup mouse interaction physics
 export const initMouseInteraction = (
   worldRef: RefObject<p2.World | null>,
-  readOnly: boolean,
   mouseBodyRef: RefObject<p2.Body | null>
 ) => {
-  if (!worldRef.current || readOnly) return;
+  if (!worldRef.current) return;
 
   // Create a body for the mouse cursor
   const mouseBody = new p2.Body({
@@ -70,11 +69,12 @@ export const startInteraction = (
   onObjectSelected?: (body: p2.Body | null) => void
 ) => {
   // If readOnly, do nothing
-  if (readOnly || !worldRef.current || !mouseBodyRef.current) {
+  if (!worldRef.current || !mouseBodyRef.current) {
     return;
   }
   // First check if we're near the rotation handle
   if (
+    !readOnly &&
     selectedBodyRef.current &&
     isNearRotationHandle(worldPoint, selectedBodyRef)
   ) {
@@ -88,7 +88,7 @@ export const startInteraction = (
   }
   // Otherwise check for body selection/dragging
   const hitBody = getBodyAtPoint(worldRef, worldPoint);
-  if (hitBody && hitBody.type !== p2.Body.STATIC) {
+  if (!readOnly && hitBody && hitBody.type !== p2.Body.STATIC) {
     selectedBodyRef.current = hitBody;
     isDraggingRef.current = true;
     // Notify parent component about the selected body
@@ -125,11 +125,7 @@ export const updateInteraction = (
   isDraggingRef: RefObject<boolean>,
   onRotation?: (body: p2.Body, angle: number) => void
 ) => {
-  // If readOnly, do nothing
-  if (readOnly) {
-    return;
-  }
-  if (isRotatingRef.current && selectedBodyRef.current) {
+  if (isRotatingRef.current && selectedBodyRef.current && !readOnly) {
     // We're in rotation mode
     const body = selectedBodyRef.current;
     // Calculate new angle based on mouse position relative to body center
@@ -144,7 +140,7 @@ export const updateInteraction = (
     if (onRotation) {
       onRotation(body, newAngle);
     }
-  } else if (isDraggingRef.current && mouseBodyRef.current) {
+  } else if (isDraggingRef.current && mouseBodyRef.current && !readOnly) {
     // Regular dragging mode
     mouseBodyRef.current.position = worldPoint;
   }
@@ -152,7 +148,6 @@ export const updateInteraction = (
 
 // End dragging or rotation
 export const endInteraction = (
-  readOnly: boolean,
   worldRef: RefObject<p2.World | null>,
   mouseConstraintRef: RefObject<p2.Constraint | null>,
   selectedBodyRef: RefObject<p2.Body | null>,
@@ -160,9 +155,6 @@ export const endInteraction = (
   isDraggingRef: RefObject<boolean>,
   onRotationEnd?: (body: p2.Body) => void
 ) => {
-  // If readOnly, do nothing
-  if (readOnly) return;
-
   if (isRotatingRef.current && selectedBodyRef.current) {
     // End rotation mode
     isRotatingRef.current = false;

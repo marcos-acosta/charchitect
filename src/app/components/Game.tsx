@@ -95,6 +95,11 @@ export default function Game() {
     setLettersInUse({ ...lettersInUse, [letterId]: letterEnum });
   };
 
+  const addLetterToTrialFromEnum = (letterEnum: LETTERS) => {
+    const letterPolygons = LETTER_POLYGONS[letterEnum];
+    addLetterToTrial(letterEnum, letterPolygons);
+  };
+
   const handleKeypress = (event: KeyboardEvent) => {
     if (event.metaKey || event.altKey || event.ctrlKey) {
       return;
@@ -102,8 +107,7 @@ export default function Game() {
     const letter = event.key.toUpperCase();
     if (Object.keys(LETTERS).includes(letter)) {
       const letterEnum = LETTERS[letter as keyof typeof LETTERS];
-      const letterPolygons = LETTER_POLYGONS[letterEnum];
-      addLetterToTrial(letterEnum, letterPolygons);
+      addLetterToTrialFromEnum(letterEnum);
     }
   };
 
@@ -191,8 +195,7 @@ export default function Game() {
               <LetterButton
                 letter={letter}
                 used={Object.values(lettersInUse).includes(letter)}
-                // onClick={() => addLetterToTrial(letter)}
-                onClick={() => {}}
+                onClick={() => addLetterToTrialFromEnum(letter)}
                 key={letter}
               />
             ))}

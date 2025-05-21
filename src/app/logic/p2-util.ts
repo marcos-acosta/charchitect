@@ -81,16 +81,10 @@ export const getBodyAtPoint = (
   const hitBodies = world.hitTest(
     [worldPoint[0] - panOffset[0], worldPoint[1] - panOffset[1]],
     world.bodies,
-    0.5
+    0.1
   );
 
-  if (hitBodies.length > 0) {
-    // Filter out static bodies if you don't want to drag them
-    const dynamicBodies = hitBodies.filter((b) => b.type !== p2.Body.STATIC);
-    return dynamicBodies.length > 0 ? dynamicBodies[0] : null;
-  }
-
-  return null;
+  return hitBodies.length > 0 ? hitBodies[0] : null;
 };
 
 export const isLetter = (body: p2.Body) => {

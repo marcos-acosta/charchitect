@@ -16,11 +16,10 @@ import {
   velocityToSpeed,
   WOOD_MATERIAL,
 } from "./p2-util";
-import { IDimensions, IPolygons } from "./interfaces";
+import { IDimensions, IPolygons, LETTERS } from "./interfaces";
 import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
 import { RefObject } from "react";
-
 export const createWorld = (trialCanvas = false): [p2.World, p2.Body] => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
@@ -164,6 +163,26 @@ export const addLetterToWorld = (
     true,
     scalingRatio
   );
+};
+
+export const removeLetterFromWorld = (
+  letterEnum: LETTERS,
+  lettersInUse: Record<number, LETTERS>,
+  world: p2.World
+) => {
+  const letterId = Object.entries(lettersInUse).find(
+    ([_, value]) => value === letterEnum
+  )?.[0];
+  if (!letterId) {
+    return;
+  }
+  const letterBody = world.bodies.find(
+    (body) => body.id === parseInt(letterId)
+  );
+  if (!letterBody) {
+    return;
+  }
+  world.removeBody(letterBody);
 };
 
 export const updateHighestPoint = (

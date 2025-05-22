@@ -16,6 +16,7 @@ import {
   addLetterToWorld,
   allLettersStill,
   createWorld,
+  removeLetterFromWorld,
   runSimulation,
   startShakeTest,
   updateHighestPoint,
@@ -51,7 +52,7 @@ export default function Game() {
   // Whether all letters are currently still
   const [allLettersStillState, setAllLettersStillState] = useState(true);
   // Whether the letters have been still for some time
-  const [stabilized, setStabilized] = useState(true);
+  const [stabilized, setStabilized] = useState(false);
   // Add panning state
   const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
 
@@ -95,6 +96,29 @@ export default function Game() {
     setLettersInUse({ ...lettersInUse, [letterId]: letterEnum });
   };
 
+  const removeLetterFromTrial = (letterEnum: LETTERS) => {
+    if (!sandboxWorldRef.current) {
+      return;
+    }
+    removeLetterFromWorld(letterEnum, lettersInUse, sandboxWorldRef.current);
+    setLettersInUse((prev) =>
+      Object.fromEntries(
+        Object.entries(prev).filter(([_, value]) => value !== letterEnum)
+      )
+    );
+  };
+
+  const toggleLetter = (letterEnum: LETTERS) => {
+    if (!sandboxWorldRef.current) {
+      return;
+    }
+    if (Object.values(lettersInUse).includes(letterEnum)) {
+      removeLetterFromTrial(letterEnum);
+    } else {
+      addLetterToTrial(letterEnum, LETTER_POLYGONS[letterEnum]);
+    }
+  };
+
   const addLetterToTrialFromEnum = (letterEnum: LETTERS) => {
     const letterPolygons = LETTER_POLYGONS[letterEnum];
     addLetterToTrial(letterEnum, letterPolygons);
@@ -107,7 +131,7 @@ export default function Game() {
     const letter = event.key.toUpperCase();
     if (Object.keys(LETTERS).includes(letter)) {
       const letterEnum = LETTERS[letter as keyof typeof LETTERS];
-      addLetterToTrialFromEnum(letterEnum);
+      toggleLetter(letterEnum);
     }
   };
 
@@ -195,7 +219,7 @@ export default function Game() {
               <LetterButton
                 letter={letter}
                 used={Object.values(lettersInUse).includes(letter)}
-                onClick={() => addLetterToTrialFromEnum(letter)}
+                onClick={() => toggleLetter(letter)}
                 key={letter}
               />
             ))}
@@ -264,6 +288,7 @@ export default function Game() {
                     onRotation={handleRotation}
                     panOffset={panOffset}
                     onPanChange={setPanOffset}
+                    lettersInUse={lettersInUse}
                   />
                 )}
             </div>

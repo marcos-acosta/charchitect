@@ -33,6 +33,7 @@ interface CanvasProps {
   onAfterStep?: () => void; // Callback after each physics step
   panOffset: [number, number]; // Current pan offset
   onPanChange: (fn: (offset: [number, number]) => [number, number]) => void; // Callback to update pan offset
+  lettersInUse?: Record<number, string>; // Track letters in use
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -50,6 +51,14 @@ export default function Canvas(props: CanvasProps) {
 
   // Rotation state
   const isRotatingRef = useRef<boolean>(false);
+
+  // Reset interaction refs when lettersInUse changes
+  useEffect(() => {
+    mouseConstraintRef.current = null;
+    selectedBodyRef.current = null;
+    isDraggingRef.current = false;
+    isRotatingRef.current = false;
+  }, [props.lettersInUse]);
 
   // Convenience functions
   const _startInteraction = (

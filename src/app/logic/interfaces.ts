@@ -52,6 +52,6 @@ export interface IScore {
 }
 
 export enum Pages {
-  HOMEPAGE,
-  SANDBOX,
+  HOMEPAGE = "HOMEPAGE",
+  SANDBOX = "SANDBOX",
 }

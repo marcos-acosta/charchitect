@@ -148,7 +148,10 @@ export const allLettersStill = (
 export const addLetterToWorld = (
   letterPolygons: IPolygons,
   world: p2.World,
-  dimensions: IDimensions
+  dimensions: IDimensions,
+  position?: [number, number],
+  angle?: number,
+  isStatic?: boolean
 ): number => {
   const metersPerPixel = computeMetersPerPixel(
     dimensions.width,
@@ -161,10 +164,12 @@ export const addLetterToWorld = (
     metersPerPixel;
   return createLetterFromPoints(
     letterPolygons,
-    [0.5, canvasHeightMeters / 2],
+    position ? [position[0], position[1]] : [0.5, canvasHeightMeters / 2],
     world,
     WOOD_MATERIAL,
+    angle || 0,
     true,
+    isStatic,
     scalingRatio
   );
 };

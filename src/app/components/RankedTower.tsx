@@ -1,5 +1,6 @@
 import { ILetterData } from "../logic/interfaces";
 import styles from "./../styles.module.css";
+import StaticStack from "./StaticStack";
 
 interface RankedTowerProps {
   rank: number;
@@ -17,6 +18,13 @@ export default function RankedTower(props: RankedTowerProps) {
         <div className={styles.height}>Height: {props.height}</div>
         <div className={styles.screenName}>From: {props.screenName}</div>
         <div className={styles.date}>Date: {props.date.toDateString()}</div>
+        <StaticStack
+          letters={props.letterData}
+          highestPoint={props.height}
+          width={300}
+          height={500}
+          pixelsPerMeter={30}
+        />
       </div>
     </div>
   );

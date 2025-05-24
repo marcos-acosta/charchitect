@@ -23,7 +23,9 @@ export const createLetterFromPoints = (
   position: IPoint,
   world: p2.World,
   material: p2.Material,
+  angle = 0,
   trial = false,
+  isStatic = false,
   normalizeFactor = 2000
 ): number => {
   const concaveBody = new p2.Body({
@@ -32,7 +34,8 @@ export const createLetterFromPoints = (
     angularDamping: trial ? 1 : 0.01,
     damping: trial ? 1 : 0.1,
     collisionResponse: !trial,
-    type: p2.Body.DYNAMIC,
+    type: isStatic ? p2.Body.STATIC : p2.Body.DYNAMIC,
+    angle: angle,
   });
   polygons.forEach((polygon) => {
     const cm = p2.vec2.create();

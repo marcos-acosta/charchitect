@@ -20,6 +20,7 @@ import {
   updateInteraction,
 } from "../logic/interaction-util";
 import { getBodyAtPoint } from "../logic/p2-util";
+import { paintCanvas } from "./CanvasPainter";
 
 interface CanvasProps {
   worldRef: RefObject<p2.World>;
@@ -242,67 +243,6 @@ export default function Canvas(props: CanvasProps) {
     e.preventDefault();
   };
 
-  const drawWorld = (ctx: CanvasRenderingContext2D) => {
-    setUpCanvas(ctx, props.width, props.height, props.pixelsPerMeter);
-
-    // Apply pan offset
-    ctx.translate(props.panOffset[0], props.panOffset[1]);
-
-    // Draw highest point line if provided
-    if (props.highestPoint && props.highestPoint.current > 0) {
-      // Convert highest point to canvas coordinates
-      const lineY = props.highestPoint.current;
-      drawHighestPoint(ctx, lineY, props.width / props.pixelsPerMeter);
-    }
-
-    props.worldRef.current.bodies.forEach((body) => {
-      // Skip drawing the mouse body
-      if (mouseBodyRef.current && body === mouseBodyRef.current) return;
-
-      ctx.save();
-      ctx.translate(body.interpolatedPosition[0], body.interpolatedPosition[1]);
-      ctx.rotate(body.angle);
-
-      body.shapes.forEach((shape) => {
-        const shapeOffset = shape.position;
-        const shapeAngle = shape.angle;
-        ctx.save();
-        ctx.translate(shapeOffset[0], shapeOffset[1]);
-        ctx.rotate(shapeAngle);
-        if (shape instanceof p2.Box) {
-          /** BOX */
-          const width = shape.width;
-          const height = shape.height;
-          if (body.type !== p2.Body.STATIC) {
-            drawBox(ctx, width, height);
-          }
-        } else if (shape instanceof p2.Convex) {
-          /** POLYGON */
-          const color =
-            selectedBodyRef.current === body ? COLORS.selected : COLORS.dynamic;
-          drawPolygon(shape, ctx, color);
-        }
-        ctx.restore(); // Restore after each shape
-      });
-      ctx.restore();
-    });
-
-    // Only draw rotation handle in interactive mode (not readOnly)
-    if (!props.readOnly && selectedBodyRef.current) {
-      const body = selectedBodyRef.current;
-      const bodyX = body.interpolatedPosition[0];
-      const bodyY = body.interpolatedPosition[1];
-
-      // Calculate handle position
-      const handleX = bodyX + Math.cos(body.angle) * ROTATION_HANDLE_DISTANCE;
-      const handleY = bodyY + Math.sin(body.angle) * ROTATION_HANDLE_DISTANCE;
-
-      drawRotationHandle(ctx, bodyX, bodyY, handleX, handleY);
-    }
-
-    ctx.restore();
-  };
-
   // Animation loop using requestAnimationFrame
   const animate = (time: number) => {
     if (previousTimeRef.current === null) {
@@ -324,7 +264,18 @@ export default function Canvas(props: CanvasProps) {
     if (canvas) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        drawWorld(ctx);
+        paintCanvas({
+          ctx,
+          width: props.width,
+          height: props.height,
+          pixelsPerMeter: props.pixelsPerMeter,
+          world: props.worldRef.current,
+          panOffset: props.panOffset,
+          highestPoint: props.highestPoint?.current,
+          selectedBody: selectedBodyRef.current,
+          readOnly: props.readOnly,
+          mouseBody: mouseBodyRef.current,
+        });
       }
     }
     // Schedule the next frame

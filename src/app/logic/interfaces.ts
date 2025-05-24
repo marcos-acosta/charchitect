@@ -42,3 +42,16 @@ export interface ILetterData {
   y: number;
   angle: number;
 }
+
+export interface IScore {
+  playerName: string;
+  score: number;
+  letters: ILetterData[];
+  timestamp: string;
+  _id: string;
+}
+
+export enum Pages {
+  HOMEPAGE,
+  SANDBOX,
+}

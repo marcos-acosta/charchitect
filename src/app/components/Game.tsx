@@ -2,7 +2,7 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import { IDimensions, IPolygons, LETTERS } from "../logic/interfaces";
+import { IDimensions, IPolygons, LETTERS, Pages } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
 import { handleRotation } from "../logic/p2-util";
 import { computePixelsPerMeter } from "../logic/render-util";
@@ -24,7 +24,11 @@ import {
 import LETTER_POLYGONS from "../logic/letters";
 import { submitScore } from "../logic/server";
 
-export default function Game() {
+interface GameProps {
+  setPage: (page: Pages) => void;
+}
+
+export default function Game(props: GameProps) {
   /** REFS */
   // Create sandbox world (left side - interactive)
   const sandboxWorldRef = useRef<p2.World | null>(null);
@@ -337,6 +341,9 @@ export default function Game() {
                     : "Stability test not started"}
                 </div>
               </div>
+              <button onClick={() => props.setPage(Pages.HOMEPAGE)}>
+                Back to Homepage
+              </button>
             </div>
             <div className={styles.canvasContainer} ref={canvasContainerRef}>
               {sandboxWorldRef.current &&

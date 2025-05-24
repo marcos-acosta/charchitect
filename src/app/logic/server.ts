@@ -25,3 +25,12 @@ export const submitScore = async (
   });
   return response.data;
 };
+
+export const getScores = async (topN: number) => {
+  const response = await axios.get(`${API_URL}/api/scores`, {
+    params: {
+      topN,
+    },
+  });
+  return response.data;
+};

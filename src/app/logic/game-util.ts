@@ -81,7 +81,10 @@ export const createWorld = (trialCanvas = false): [p2.World, p2.Body] => {
 };
 
 // Function to clone a body from one world to another
-export const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World) => {
+export const cloneBodyToWorld = (
+  body: p2.Body,
+  targetWorld: p2.World
+): p2.Body | null => {
   // Create a new body with the same properties
   const newBody = new p2.Body({
     mass: body.mass,
@@ -105,7 +108,7 @@ export const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World) => {
       body.shapes[0].type === p2.Shape.CONVEX
     )
   ) {
-    return;
+    return null;
   }
 
   // Clone all shapes from the original body
@@ -124,6 +127,7 @@ export const cloneBodyToWorld = (body: p2.Body, targetWorld: p2.World) => {
 
   // Add the new body to the target world
   targetWorld.addBody(newBody);
+  return newBody;
 };
 
 export const allLettersStill = (
@@ -213,12 +217,13 @@ export const updateHighestPoint = (
 // Copy the sandbox world to the trial world
 export const runSimulation = (
   sandboxWorldRef: RefObject<p2.World | null>,
-  trialWorldRef: RefObject<p2.World | null>
-) => {
+  trialWorldRef: RefObject<p2.World | null>,
+  lettersInUse: Record<number, LETTERS>
+): Record<number, LETTERS> => {
   const sandboxWorld = sandboxWorldRef.current;
   const trialWorld = trialWorldRef.current;
 
-  if (!sandboxWorld || !trialWorld) return;
+  if (!sandboxWorld || !trialWorld) return {};
 
   // Clear existing non-static bodies from trial world
   const bodiesToRemove = [];
@@ -235,10 +240,18 @@ export const runSimulation = (
     trialWorld.removeBody(body);
   });
 
+  // Create a mapping of trial body IDs to original letters
+  const trialBodyIdToLetterMapping: Record<number, LETTERS> = {};
+
   // Copy bodies from sandbox to trial
   sandboxWorld.bodies.forEach((body) => {
-    cloneBodyToWorld(body, trialWorld);
+    const newBody = cloneBodyToWorld(body, trialWorld);
+    if (newBody && lettersInUse[body.id]) {
+      trialBodyIdToLetterMapping[newBody.id] = lettersInUse[body.id];
+    }
   });
+
+  return trialBodyIdToLetterMapping;
 };
 
 export const startShakeTest = (body: p2.Body) => {

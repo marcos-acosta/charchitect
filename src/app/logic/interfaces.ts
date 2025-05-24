@@ -35,3 +35,10 @@ export enum LETTERS {
   Y = "Y",
   Z = "Z",
 }
+
+export interface ILetterData {
+  letter: string;
+  x: number;
+  y: number;
+  angle: number;
+}

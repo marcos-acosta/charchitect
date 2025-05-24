@@ -22,6 +22,7 @@ import {
   updateHighestPoint,
 } from "../logic/game-util";
 import LETTER_POLYGONS from "../logic/letters";
+import { submitScore } from "../logic/server";
 
 export default function Game() {
   /** REFS */
@@ -49,12 +50,18 @@ export default function Game() {
     useState<IDimensions | null>(null);
   // The letters currently in use
   const [lettersInUse, setLettersInUse] = useState<Record<number, LETTERS>>({});
+  // Mapping of trial world body IDs to letters
+  const [trialBodyIdToLetterMapping, setTrialBodyIdToLetterMapping] = useState<
+    Record<number, LETTERS>
+  >({});
   // Whether all letters are currently still
   const [allLettersStillState, setAllLettersStillState] = useState(true);
   // Whether the letters have been still for some time
   const [stabilized, setStabilized] = useState(false);
   // Add panning state
   const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
+  // Whether the score is being submitted
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -117,11 +124,6 @@ export default function Game() {
     } else {
       addLetterToTrial(letterEnum, LETTER_POLYGONS[letterEnum]);
     }
-  };
-
-  const addLetterToTrialFromEnum = (letterEnum: LETTERS) => {
-    const letterPolygons = LETTER_POLYGONS[letterEnum];
-    addLetterToTrial(letterEnum, letterPolygons);
   };
 
   const handleKeypress = (event: KeyboardEvent) => {
@@ -199,7 +201,12 @@ export default function Game() {
     if (!gravityTrialRun) {
       setGravityTrialRun(true);
     }
-    runSimulation(sandboxWorldRef, trialWorldRef);
+    const newMapping = runSimulation(
+      sandboxWorldRef,
+      trialWorldRef,
+      lettersInUse
+    );
+    setTrialBodyIdToLetterMapping(newMapping);
     setStabilityTestStarted(false);
   };
 
@@ -207,6 +214,20 @@ export default function Game() {
     if (trialGroundRef.current) {
       startShakeTest(trialGroundRef.current);
       setStabilityTestStarted(true);
+    }
+  };
+
+  const submitScoreCallback = () => {
+    if (trialWorldRef.current) {
+      setIsSubmitting(true);
+      submitScore(
+        "sampleName",
+        highestPointRef.current,
+        trialWorldRef.current,
+        trialBodyIdToLetterMapping
+      ).then(() => {
+        setIsSubmitting(false);
+      });
     }
   };
 
@@ -243,13 +264,20 @@ export default function Game() {
                 <div className={styles.buttonText}>RUN STABILITY TEST</div>
               </button>
               <button
-                onClick={() => {}}
+                onClick={submitScoreCallback}
                 className={styles.controlsButton}
                 disabled={
-                  !(stabilityTestStarted && stabilized && gravityTrialRun)
+                  !(
+                    stabilityTestStarted &&
+                    stabilized &&
+                    gravityTrialRun &&
+                    !isSubmitting
+                  )
                 }
               >
-                <div className={styles.buttonText}>SUBMIT</div>
+                <div className={styles.buttonText}>
+                  {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
+                </div>
               </button>
               <button
                 onClick={() => setPanOffset([0, 0])}
@@ -306,6 +334,7 @@ export default function Game() {
                     onAfterStep={afterStep}
                     panOffset={panOffset}
                     onPanChange={setPanOffset}
+                    lettersInUse={trialBodyIdToLetterMapping}
                   />
                 )}
             </div>

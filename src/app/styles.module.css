@@ -30,7 +30,6 @@
   display: block;
   background: var(--background);
   border: 1px solid black;
-  cursor: grab;
 }
 
 .controlsContainer {

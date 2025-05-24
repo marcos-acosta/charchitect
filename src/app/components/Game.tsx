@@ -40,6 +40,10 @@ export default function Game() {
   const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Ref to track the ground in the trial world
   const trialGroundRef = useRef<p2.Body>(null);
+  // Track last simulation run time
+  const lastSimulationTimeRef = useRef<number>(0);
+  // Track last shake test time
+  const lastShakeTestTimeRef = useRef<number>(0);
   /** STATES */
   // Whether any gravity trial has been run
   const [gravityTrialRun, setGravityTrialRun] = useState(false);
@@ -217,12 +221,14 @@ export default function Game() {
     );
     setTrialBodyIdToLetterMapping(newMapping);
     setStabilityTestStarted(false);
+    lastSimulationTimeRef.current = Date.now();
   };
 
   const runShakeTestCallback = () => {
     if (trialGroundRef.current) {
       startShakeTest(trialGroundRef.current);
       setStabilityTestStarted(true);
+      lastShakeTestTimeRef.current = Date.now();
     }
   };
 
@@ -250,6 +256,24 @@ export default function Game() {
     }
   };
 
+  const isInGracePeriod = (lastTime: number, gracePeriodMs: number) => {
+    return Date.now() - lastTime < gracePeriodMs;
+  };
+
+  /** BUTTON STATES */
+  const canRunShakeTest =
+    !stabilityTestStarted &&
+    stabilized &&
+    gravityTrialRun &&
+    !isInGracePeriod(lastSimulationTimeRef.current, 1000);
+
+  const canSubmitScore =
+    stabilityTestStarted &&
+    stabilized &&
+    gravityTrialRun &&
+    !isSubmitting &&
+    !isInGracePeriod(lastShakeTestTimeRef.current, 1000);
+
   return (
     <div className={styles.pageOuterContainer}>
       <div className={styles.coreGameContainer}>
@@ -276,23 +300,14 @@ export default function Game() {
               <button
                 onClick={runShakeTestCallback}
                 className={styles.controlsButton}
-                disabled={
-                  !(!stabilityTestStarted && stabilized && gravityTrialRun)
-                }
+                disabled={!canRunShakeTest}
               >
                 <div className={styles.buttonText}>RUN STABILITY TEST</div>
               </button>
               <button
                 onClick={submitScoreCallback}
                 className={styles.controlsButton}
-                disabled={
-                  !(
-                    stabilityTestStarted &&
-                    stabilized &&
-                    gravityTrialRun &&
-                    !isSubmitting
-                  )
-                }
+                disabled={!canSubmitScore}
               >
                 <div className={styles.buttonText}>
                   {isSubmitting ? "SUBMITTING..." : "SUBMIT"}

@@ -117,3 +117,20 @@
   border-top: 1px dashed var(--foreground);
   height: 1px;
 }
+
+.submissionDialogContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.submissionDialogContent {
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--foreground);
+  padding: 20px;
+  border-radius: 10px;
+}

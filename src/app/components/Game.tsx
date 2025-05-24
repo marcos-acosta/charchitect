@@ -62,6 +62,15 @@ export default function Game() {
   const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
   // Whether the score is being submitted
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Whether to show the name input popup
+  const [showNamePopup, setShowNamePopup] = useState(false);
+  // The player's name
+  const [playerName, setPlayerName] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("playerName") || "";
+    }
+    return "";
+  });
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -219,14 +228,24 @@ export default function Game() {
 
   const submitScoreCallback = () => {
     if (trialWorldRef.current) {
-      setIsSubmitting(true);
+      setShowNamePopup(true);
+    }
+  };
+
+  const handleNameSubmit = () => {
+    if (!playerName.trim()) return;
+
+    localStorage.setItem("playerName", playerName);
+    setIsSubmitting(true);
+    if (trialWorldRef.current) {
       submitScore(
-        "sampleName",
+        playerName,
         highestPointRef.current,
         trialWorldRef.current,
         trialBodyIdToLetterMapping
       ).then(() => {
         setIsSubmitting(false);
+        setShowNamePopup(false);
       });
     }
   };
@@ -341,6 +360,25 @@ export default function Game() {
           </div>
         </div>
       </div>
+      {showNamePopup && (
+        <div className={styles.submissionDialogContainer}>
+          <div className={styles.submissionDialogContent}>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => {
+                e.preventDefault();
+                setPlayerName(e.target.value);
+              }}
+              placeholder="Enter your screen name"
+            />
+            <button onClick={handleNameSubmit} disabled={!playerName.trim()}>
+              Submit Score
+            </button>
+            <button onClick={() => setShowNamePopup(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

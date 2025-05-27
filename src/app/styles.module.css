@@ -134,3 +134,23 @@
   padding: 20px;
   border-radius: 10px;
 }
+
+.move canvas {
+  cursor: move;
+}
+
+.grab canvas {
+  cursor: grab;
+}
+
+.rotating canvas {
+  cursor: grabbing;
+}
+
+.rotate canvas {
+  cursor: grab;
+}
+
+.drag canvas {
+  cursor: grabbing;
+}

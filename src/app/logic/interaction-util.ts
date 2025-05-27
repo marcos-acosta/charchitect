@@ -5,6 +5,7 @@ import {
   ROTATION_HANDLE_HIT_RADIUS,
 } from "./render-util";
 import { getBodyAtPoint, isLetter } from "./p2-util";
+import { CursorModes } from "./interfaces";
 
 // Check if a point is near the rotation handle
 const isNearRotationHandle = (
@@ -71,7 +72,9 @@ export const startInteraction = (
   isDraggingRef: RefObject<boolean>,
   isPanningRef: RefObject<boolean>,
   lastPanPointRef: RefObject<[number, number] | null>,
-  onObjectSelected?: (body: p2.Body | null) => void
+  onObjectSelected?: (body: p2.Body | null) => void,
+  setIsDragging?: (b: boolean) => void,
+  setIsRotating?: (b: boolean) => void
 ) => {
   // If readOnly, do nothing
   if (!worldRef.current || !mouseBodyRef.current) {
@@ -85,6 +88,9 @@ export const startInteraction = (
   ) {
     // Start rotation mode
     isRotatingRef.current = true;
+    if (setIsRotating) {
+      setIsRotating(true);
+    }
     return;
   }
   // Otherwise check for body selection/dragging
@@ -95,6 +101,9 @@ export const startInteraction = (
     // Notify parent component about the selected body
     if (onObjectSelected) {
       onObjectSelected(hitBody);
+    }
+    if (setIsDragging) {
+      setIsDragging(true);
     }
     // Position the mouse body at the click point
     mouseBodyRef.current.position = worldPoint;
@@ -124,6 +133,7 @@ export const updateInteraction = (
   panOffset: [number, number],
   mouseEvent: MouseEvent | Touch,
   readOnly: boolean,
+  worldRef: RefObject<p2.World | null>,
   mouseBodyRef: RefObject<p2.Body | null>,
   selectedBodyRef: RefObject<p2.Body | null>,
   isRotatingRef: RefObject<boolean>,
@@ -132,7 +142,8 @@ export const updateInteraction = (
   lastPanPointRef: RefObject<[number, number] | null>,
   pixelsPerMeter: number,
   onRotation?: (body: p2.Body, angle: number) => void,
-  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void
+  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void,
+  setCursorState?: (c: CursorModes) => void
 ) => {
   if (isRotatingRef.current && selectedBodyRef.current && !readOnly) {
     // We're in rotation mode
@@ -168,6 +179,16 @@ export const updateInteraction = (
 
     lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
+  // Update hover effects
+  if (setCursorState) {
+    if (isNearRotationHandle(worldPoint, panOffset, selectedBodyRef)) {
+      setCursorState(CursorModes.ROTATE);
+    } else if (getBodyAtPoint(worldRef, worldPoint, panOffset)) {
+      setCursorState(CursorModes.GRAB);
+    } else {
+      setCursorState(CursorModes.MOVE);
+    }
+  }
 };
 
 // End dragging or rotation
@@ -196,4 +217,13 @@ export const endInteraction = (
     isPanningRef.current = false;
     lastPanPointRef.current = null;
   }
+};
+
+export const isPointOverLetter = (
+  worldRef: RefObject<p2.World>,
+  pointInWorld: [number, number],
+  panOffset: [number, number]
+) => {
+  const hitBody = getBodyAtPoint(worldRef, pointInWorld, panOffset);
+  return hitBody && isLetter(hitBody);
 };

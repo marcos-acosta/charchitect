@@ -55,3 +55,9 @@ export enum Pages {
   HOMEPAGE = "HOMEPAGE",
   SANDBOX = "SANDBOX",
 }
+
+export enum CursorModes {
+  MOVE = "MOVE",
+  GRAB = "GRAB",
+  ROTATE = "ROTATE",
+}

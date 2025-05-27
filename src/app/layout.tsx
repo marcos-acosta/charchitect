@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Charchitect",
+  title: "Typesetter",
   description: "Giving a new meaning to font weight",
 };
 

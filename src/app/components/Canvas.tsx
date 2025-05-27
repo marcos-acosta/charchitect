@@ -2,16 +2,9 @@ import React, { useRef, useEffect, RefObject } from "react";
 import styles from "./../styles.module.css";
 import * as p2 from "p2-es";
 import {
-  ROTATION_HANDLE_DISTANCE,
-  COLORS,
   FIXED_TIME_STEP,
   MAX_SUB_STEPS,
   getPhysicsCoord,
-  setUpCanvas,
-  drawHighestPoint,
-  drawBox,
-  drawPolygon,
-  drawRotationHandle,
 } from "../logic/render-util";
 import {
   endInteraction,
@@ -21,6 +14,7 @@ import {
 } from "../logic/interaction-util";
 import { getBodyAtPoint } from "../logic/p2-util";
 import { paintCanvas } from "./CanvasPainter";
+import { CursorModes } from "../logic/interfaces";
 
 interface CanvasProps {
   worldRef: RefObject<p2.World>;
@@ -35,6 +29,9 @@ interface CanvasProps {
   panOffset: [number, number]; // Current pan offset
   onPanChange: (fn: (offset: [number, number]) => [number, number]) => void; // Callback to update pan offset
   lettersInUse?: Record<number, string>; // Track letters in use
+  setCursorState?: (c: CursorModes) => void;
+  setIsDragging?: (b: boolean) => void;
+  setIsRotating?: (b: boolean) => void;
 }
 
 export default function Canvas(props: CanvasProps) {
@@ -79,7 +76,9 @@ export default function Canvas(props: CanvasProps) {
       isDraggingRef,
       isPanningRef,
       lastPanPointRef,
-      props.onObjectSelected
+      props.onObjectSelected,
+      props.setIsDragging,
+      props.setIsRotating
     );
   };
 
@@ -92,6 +91,7 @@ export default function Canvas(props: CanvasProps) {
       props.panOffset,
       e,
       Boolean(props.readOnly),
+      props.worldRef,
       mouseBodyRef,
       selectedBodyRef,
       isRotatingRef,
@@ -100,7 +100,8 @@ export default function Canvas(props: CanvasProps) {
       lastPanPointRef,
       props.pixelsPerMeter,
       props.onRotation,
-      props.onPanChange
+      props.onPanChange,
+      props.setCursorState
     );
   };
 
@@ -114,6 +115,12 @@ export default function Canvas(props: CanvasProps) {
       isPanningRef,
       lastPanPointRef
     );
+    if (props.setIsDragging) {
+      props.setIsDragging(false);
+    }
+    if (props.setIsRotating) {
+      props.setIsRotating(false);
+    }
   };
 
   const _initMouseInteraction = () => {
@@ -133,23 +140,6 @@ export default function Canvas(props: CanvasProps) {
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    // if (isPanningRef.current && lastPanPointRef.current) {
-    //   // Calculate pan delta in world coordinates
-    //   const dx =
-    //     (e.clientX - lastPanPointRef.current[0]) / props.pixelsPerMeter;
-    //   const dy =
-    //     -(e.clientY - lastPanPointRef.current[1]) / props.pixelsPerMeter;
-
-    //   // Update pan offset
-    //   props.onPanChange((panOffset: [number, number]) => [
-    //     panOffset[0] + dx,
-    //     panOffset[1] + dy,
-    //   ]);
-
-    //   lastPanPointRef.current = [e.clientX, e.clientY];
-    //   return;
-    // }
-
     const worldPoint = getPhysicsCoord(
       canvasRef,
       e.clientX,

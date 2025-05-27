@@ -2,7 +2,13 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import { IDimensions, IPolygons, LETTERS, Pages } from "../logic/interfaces";
+import {
+  CursorModes,
+  IDimensions,
+  IPolygons,
+  LETTERS,
+  Pages,
+} from "../logic/interfaces";
 import LetterButton from "./LetterButton";
 import { handleRotation } from "../logic/p2-util";
 import { computePixelsPerMeter } from "../logic/render-util";
@@ -23,6 +29,7 @@ import {
 } from "../logic/game-util";
 import LETTER_POLYGONS from "../logic/letters";
 import { submitScore } from "../logic/server";
+import { combineClasses } from "../logic/util";
 
 interface GameProps {
   setPage: (page: Pages) => void;
@@ -79,6 +86,9 @@ export default function Game(props: GameProps) {
     }
     return "";
   });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  const [cursorState, setCursorState] = useState(CursorModes.MOVE);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -345,7 +355,21 @@ export default function Game(props: GameProps) {
                 Back to Homepage
               </button>
             </div>
-            <div className={styles.canvasContainer} ref={canvasContainerRef}>
+            <div
+              className={combineClasses(
+                styles.canvasContainer,
+                isDragging
+                  ? styles.drag
+                  : isRotating
+                  ? styles.rotating
+                  : cursorState === CursorModes.GRAB
+                  ? styles.grab
+                  : cursorState === CursorModes.ROTATE
+                  ? styles.rotate
+                  : styles.move
+              )}
+              ref={canvasContainerRef}
+            >
               {sandboxWorldRef.current &&
                 canvasContainerDimensions &&
                 pixelsPerMeter && (
@@ -358,6 +382,9 @@ export default function Game(props: GameProps) {
                     panOffset={panOffset}
                     onPanChange={setPanOffset}
                     lettersInUse={lettersInUse}
+                    setCursorState={setCursorState}
+                    setIsDragging={setIsDragging}
+                    setIsRotating={setIsRotating}
                   />
                 )}
             </div>

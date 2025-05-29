@@ -56,8 +56,12 @@ export enum Pages {
   SANDBOX = "SANDBOX",
 }
 
-export enum CursorModes {
-  MOVE = "MOVE",
-  GRAB = "GRAB",
-  ROTATE = "ROTATE",
+export enum TrialStage {
+  NOT_STARTED = 0,
+  APPLIED_GRAVITY = 1,
+  LETTERS_STILL_AFTER_GRAVITY = 2,
+  STABLE_AFTER_GRAVITY = 3,
+  APPLIED_EARTHQUAKE = 4,
+  LETTERS_STILL_AFTER_EARTHQUAKE = 5,
+  STABLE_AFTER_EARTHQUAKE = 6,
 }

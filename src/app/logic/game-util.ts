@@ -139,7 +139,11 @@ export const allLettersStill = (
   linearThreshold: number,
   angularThreshold: number
 ) => {
-  for (const body of world.bodies) {
+  const trialLetters = world.bodies.filter((body) => isTrialLetter(body));
+  if (trialLetters.length === 0) {
+    return false;
+  }
+  for (const body of trialLetters) {
     const linearSpeed = velocityToSpeed(body.velocity);
     const angularSpeed = body.angularVelocity;
     if (linearSpeed > linearThreshold || angularSpeed > angularThreshold) {

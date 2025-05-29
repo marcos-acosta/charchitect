@@ -1,8 +1,14 @@
-import { RefObject, useEffect, useRef, useState } from "react";
+import { RefObject, useEffect, useRef, useState, useCallback } from "react";
 import * as p2 from "p2-es";
 import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import { IDimensions, IPolygons, LETTERS, Pages } from "../logic/interfaces";
+import {
+  IDimensions,
+  IPolygons,
+  LETTERS,
+  Pages,
+  TrialStage,
+} from "../logic/interfaces";
 import LetterButton from "./LetterButton";
 import { computePixelsPerMeter } from "../logic/render-util";
 import {
@@ -38,29 +44,19 @@ export default function Game(props: GameProps) {
   // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   // Whether all letters are currently still
-  const allLettersStillRef = useRef<boolean>(true);
+  const allLettersStillRef = useRef<boolean>(false);
   // Timeout to detect stability
   const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Ref to track the ground
   const groundRef = useRef<p2.Body>(null);
-  // Track last simulation run time
-  const lastSimulationTimeRef = useRef<number>(0);
-  // Track last shake test time
-  const lastShakeTestTimeRef = useRef<number>(0);
+  // Track current trial stage
+  const trialStageRef = useRef<TrialStage>(TrialStage.NOT_STARTED);
   /** STATES */
-  // Whether any gravity trial has been run
-  const [gravityTrialRun, setGravityTrialRun] = useState(false);
-  // Whether the stability test has started
-  const [stabilityTestStarted, setStabilityTestStarted] = useState(false);
   // The current canvas container dimensions
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
   // The letters currently in use
   const [lettersInUse, setLettersInUse] = useState<Record<number, LETTERS>>({});
-  // Whether all letters are currently still
-  const [allLettersStillState, setAllLettersStillState] = useState(true);
-  // Whether the letters have been still for some time
-  const [stabilized, setStabilized] = useState(false);
   // Add panning state
   const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
   // Whether the score is being submitted
@@ -81,6 +77,8 @@ export default function Game(props: GameProps) {
   const [isPanning, setIsPanning] = useState(false);
   // Whether we're in trial mode
   const [isTrialMode, setIsTrialMode] = useState(false);
+  // The current trial stage
+  const [trialStage, setTrialStage] = useState(TrialStage.NOT_STARTED);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -157,24 +155,35 @@ export default function Game(props: GameProps) {
     }
   };
 
-  const passGravityTrial = () => {
-    setStabilized(true);
+  const verifySolidAfterNSeconds = () => {
+    if (trialStageRef.current === TrialStage.LETTERS_STILL_AFTER_GRAVITY) {
+      setTrialStage(TrialStage.APPLIED_EARTHQUAKE);
+      setTimeout(runShakeTestCallback, 10);
+    } else if (
+      trialStageRef.current === TrialStage.LETTERS_STILL_AFTER_EARTHQUAKE
+    ) {
+      setTrialStage(TrialStage.STABLE_AFTER_EARTHQUAKE);
+    }
   };
 
-  const unpassGravityTrial = () => {
-    setStabilized(false);
+  const unVerifySolidAfterNSeconds = () => {
+    if (trialStageRef.current < TrialStage.APPLIED_EARTHQUAKE) {
+      setTrialStage(TrialStage.APPLIED_GRAVITY);
+    } else {
+      setTrialStage(TrialStage.APPLIED_EARTHQUAKE);
+    }
   };
 
   const toggleTrialMode = () => {
     if (!isTrialMode) {
       // Switching to trial mode
       startSimulation(worldRef.current as p2.World);
-      setStabilityTestStarted(false);
-      lastSimulationTimeRef.current = Date.now();
+      setTrialStage(TrialStage.APPLIED_GRAVITY);
     } else {
       // Switching back to sandbox mode
       stopSimulation(worldRef.current as p2.World);
       highestPointRef.current = null;
+      setTrialStage(TrialStage.NOT_STARTED);
     }
     setIsTrialMode(!isTrialMode);
   };
@@ -199,18 +208,31 @@ export default function Game(props: GameProps) {
     return () => resizeObserver.disconnect();
   }, [canvasContainerRef.current]);
 
+  // Update ref when state changes
+  useEffect(() => {
+    trialStageRef.current = trialStage;
+  }, [trialStage]);
+
+  const updateTrialStageWithAllLettersStill = () => {
+    if (trialStageRef.current === TrialStage.APPLIED_GRAVITY) {
+      setTrialStage(TrialStage.LETTERS_STILL_AFTER_GRAVITY);
+    } else if (trialStageRef.current === TrialStage.APPLIED_EARTHQUAKE) {
+      setTrialStage(TrialStage.LETTERS_STILL_AFTER_EARTHQUAKE);
+    }
+  };
+
   const updateAllLettersStill = () => {
-    if (worldRef.current) {
+    if (worldRef.current && isTrialMode) {
       const allLettersStillResult = allLettersStill(
         worldRef.current,
         LINEAR_SPEED_THRESHOLD,
         ANGULAR_SPEED_THRESHOLD
       );
       if (allLettersStillResult != allLettersStillRef.current) {
-        setAllLettersStillState(allLettersStillResult);
         if (allLettersStillResult) {
+          updateTrialStageWithAllLettersStill();
           const timeout: NodeJS.Timeout = setTimeout(
-            passGravityTrial,
+            verifySolidAfterNSeconds,
             MIN_SECONDS_STABLE * 1000
           );
           stabilityTimeoutRef.current = timeout;
@@ -219,7 +241,7 @@ export default function Game(props: GameProps) {
             clearTimeout(stabilityTimeoutRef.current);
           }
           stabilityTimeoutRef.current = null;
-          unpassGravityTrial();
+          unVerifySolidAfterNSeconds();
         }
       }
       allLettersStillRef.current = allLettersStillResult;
@@ -234,8 +256,6 @@ export default function Game(props: GameProps) {
   const runShakeTestCallback = () => {
     if (groundRef.current) {
       startShakeTest(groundRef.current);
-      setStabilityTestStarted(true);
-      lastShakeTestTimeRef.current = Date.now();
     }
   };
 
@@ -263,23 +283,9 @@ export default function Game(props: GameProps) {
     }
   };
 
-  const isInGracePeriod = (lastTime: number, gracePeriodMs: number) => {
-    return Date.now() - lastTime < gracePeriodMs;
-  };
-
   /** BUTTON STATES */
-  const canRunShakeTest =
-    !stabilityTestStarted &&
-    stabilized &&
-    gravityTrialRun &&
-    !isInGracePeriod(lastSimulationTimeRef.current, 1000);
-
   const canSubmitScore =
-    stabilityTestStarted &&
-    stabilized &&
-    gravityTrialRun &&
-    !isSubmitting &&
-    !isInGracePeriod(lastShakeTestTimeRef.current, 1000);
+    !isSubmitting && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE;
 
   return (
     <div className={styles.pageOuterContainer}>
@@ -307,13 +313,6 @@ export default function Game(props: GameProps) {
                 <div className={styles.shortcut}>[enter]</div>
               </button>
               <button
-                onClick={runShakeTestCallback}
-                className={styles.controlsButton}
-                disabled={!canRunShakeTest}
-              >
-                <div className={styles.buttonText}>RUN STABILITY TEST</div>
-              </button>
-              <button
                 onClick={submitScoreCallback}
                 className={styles.controlsButton}
                 disabled={!canSubmitScore}
@@ -332,7 +331,8 @@ export default function Game(props: GameProps) {
                 <hr />
               </div>
               <div className={styles.statusContainer}>
-                <div className={styles.objectsMovingContainer}>
+                <div className={styles.trialStageContainer}>{trialStage}</div>
+                {/* <div className={styles.objectsMovingContainer}>
                   {allLettersStillState
                     ? "All letters still"
                     : "Some letters still moving"}
@@ -344,7 +344,7 @@ export default function Game(props: GameProps) {
                   {stabilityTestStarted
                     ? "Stability test started"
                     : "Stability test not started"}
-                </div>
+                </div> */}
               </div>
               <button onClick={() => props.setPage(Pages.HOMEPAGE)}>
                 Back to Homepage

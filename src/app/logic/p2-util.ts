@@ -23,18 +23,22 @@ export const createLetterFromPoints = (
   position: IPoint,
   world: p2.World,
   material: p2.Material,
+  damped: boolean,
+  collisionResponse: boolean,
+  type:
+    | typeof p2.Body.DYNAMIC
+    | typeof p2.Body.STATIC
+    | typeof p2.Body.KINEMATIC,
   angle = 0,
-  trial = false,
-  isStatic = false,
   normalizeFactor = 2000
 ): number => {
   const concaveBody = new p2.Body({
     mass: 30,
     position: position,
-    angularDamping: trial ? 1 : 0.01,
-    damping: trial ? 1 : 0.1,
-    collisionResponse: !trial,
-    type: isStatic ? p2.Body.STATIC : p2.Body.DYNAMIC,
+    angularDamping: damped ? 1 : 0.01,
+    damping: damped ? 1 : 0.1,
+    collisionResponse: collisionResponse,
+    type: type,
     angle: angle,
   });
   polygons.forEach((polygon) => {
@@ -64,13 +68,6 @@ export const createLetterFromPoints = (
 export const velocityToSpeed = (velocity: p2.Vec2) =>
   Math.sqrt(Math.pow(velocity[0], 2) + Math.pow(velocity[1], 2));
 
-// Handle rotation update
-export const handleRotation = (body: p2.Body) => {
-  if (body) {
-    body.angularVelocity = 0; // Prevent continued rotation
-  }
-};
-
 // Find the body under the given point
 export const getBodyAtPoint = (
   worldRef: RefObject<p2.World | null>,
@@ -92,4 +89,8 @@ export const getBodyAtPoint = (
 
 export const isLetter = (body: p2.Body) => {
   return body.shapes.some((shape) => shape.type === p2.Shape.CONVEX);
+};
+
+export const worldHasId = (world: p2.World, id: number) => {
+  return world.bodies.some((body) => body.id === id);
 };

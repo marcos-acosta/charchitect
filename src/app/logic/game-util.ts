@@ -6,13 +6,16 @@ import {
   GROUND_MASS,
   GROUND_THICKNESS_METERS,
   PUSH_VELOCITY,
+  SANDBOX_DAMPING,
   SPRING_DAMPING,
   SPRING_HOOK_WIDTH_METERS,
   SPRING_STIFFNESS,
+  TRIAL_DAMPING,
   WOOD_MATERIAL_FRICTION,
 } from "./game-config";
 import {
   createLetterFromPoints,
+  isLetter,
   velocityToSpeed,
   WOOD_MATERIAL,
 } from "./p2-util";
@@ -20,10 +23,11 @@ import { IDimensions, IPolygons, LETTERS } from "./interfaces";
 import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
 import { RefObject } from "react";
-export const createWorld = (trialCanvas = false): [p2.World, p2.Body] => {
+
+export const createWorld = (gravity: boolean): [p2.World, p2.Body] => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
-    gravity: [0, trialCanvas ? -9.81 : 0],
+    gravity: gravity ? [0, -9.81] : [0, 0],
   });
 
   const GROUND_WIDTH = CANVAS_WIDTH_METERS * 0.9;
@@ -150,8 +154,7 @@ export const addLetterToWorld = (
   world: p2.World,
   dimensions: IDimensions,
   position?: [number, number],
-  angle?: number,
-  isStatic?: boolean
+  angle?: number
 ): number => {
   const metersPerPixel = computeMetersPerPixel(
     dimensions.width,
@@ -167,11 +170,116 @@ export const addLetterToWorld = (
     position ? [position[0], position[1]] : [0.5, canvasHeightMeters / 2],
     world,
     WOOD_MATERIAL,
-    angle || 0,
     true,
-    isStatic,
+    false,
+    p2.Body.DYNAMIC,
+    angle || 0,
     scalingRatio
   );
+};
+
+export const isManipulableLetter = (body: p2.Body) => {
+  // console.log(body.id, isLetter(body), body.damping, body.type);
+  return (
+    isLetter(body) &&
+    body.damping === SANDBOX_DAMPING &&
+    body.type === p2.Body.DYNAMIC
+  );
+};
+
+export const isShadowLetter = (body: p2.Body) => {
+  return isLetter(body) && body.type === p2.Body.STATIC;
+};
+
+export const isTrialLetter = (body: p2.Body) => {
+  return (
+    isLetter(body) &&
+    body.damping === TRIAL_DAMPING &&
+    body.type === p2.Body.DYNAMIC
+  );
+};
+
+const clearAllTrialLetters = (world: p2.World) => {
+  const bodiesToRemove = [];
+  for (const body of world.bodies) {
+    if (isLetter(body) && isTrialLetter(body)) {
+      bodiesToRemove.push(body);
+    }
+  }
+  bodiesToRemove.forEach((body) => {
+    world.removeBody(body);
+  });
+};
+
+const clearAllManipulableLetters = (world: p2.World) => {
+  for (const body of world.bodies) {
+    if (isManipulableLetter(body)) {
+      body.type = p2.Body.STATIC;
+    }
+  }
+};
+
+const makeTrialCopy = (
+  body: p2.Body,
+  newType:
+    | typeof p2.Body.DYNAMIC
+    | typeof p2.Body.STATIC
+    | typeof p2.Body.KINEMATIC,
+  collisionResponse?: boolean
+) => {
+  const newBody = new p2.Body({
+    mass: body.mass,
+    position: [body.position[0], body.position[1]],
+    angle: body.angle,
+    velocity: [0, 0],
+    angularVelocity: 0,
+    damping: TRIAL_DAMPING,
+    angularDamping: TRIAL_DAMPING,
+    collisionResponse: collisionResponse,
+    type: newType,
+  });
+  for (const shape of body.shapes) {
+    if (shape instanceof p2.Convex) {
+      const newShape = new p2.Convex({ vertices: [...shape.vertices] });
+      newBody.addShape(newShape, shape.position, shape.angle);
+    }
+  }
+  return newBody;
+};
+
+export const transformManipulableLetters = (world: p2.World) => {
+  const trialLetters = [];
+  for (let i = 0; i < world.bodies.length; i++) {
+    const body = world.bodies[i];
+    if (isManipulableLetter(body)) {
+      const trialLetter = makeTrialCopy(body, p2.Body.DYNAMIC, true);
+      trialLetters.push(trialLetter);
+    }
+  }
+  clearAllManipulableLetters(world);
+  for (const letter of trialLetters) {
+    world.addBody(letter);
+  }
+};
+
+export const startSimulation = (world: p2.World) => {
+  clearAllTrialLetters(world);
+  transformManipulableLetters(world);
+  world.gravity[1] = -9.81;
+};
+
+const makeGhostLettersManipulable = (world: p2.World) => {
+  for (const body of world.bodies) {
+    if (isShadowLetter(body)) {
+      body.type = p2.Body.DYNAMIC;
+    }
+  }
+};
+
+export const stopSimulation = (world: p2.World) => {
+  clearAllTrialLetters(world);
+  makeGhostLettersManipulable(world);
+  world.gravity[1] = 0;
 };
 
 export const removeLetterFromWorld = (
@@ -220,7 +328,7 @@ export const updateHighestPoint = (
 };
 
 // Copy the sandbox world to the trial world
-export const runSimulation = (
+const runSimulationOld = (
   sandboxWorldRef: RefObject<p2.World | null>,
   trialWorldRef: RefObject<p2.World | null>,
   lettersInUse: Record<number, LETTERS>

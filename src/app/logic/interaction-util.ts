@@ -4,8 +4,7 @@ import {
   ROTATION_HANDLE_DISTANCE,
   ROTATION_HANDLE_HIT_RADIUS,
 } from "./render-util";
-import { getBodyAtPoint, isLetter } from "./p2-util";
-import { CursorModes } from "./interfaces";
+import { getBodyAtPoint, isLetter, worldHasId } from "./p2-util";
 
 // Check if a point is near the rotation handle
 const isNearRotationHandle = (
@@ -47,8 +46,14 @@ export const initMouseInteraction = (
   worldRef: RefObject<p2.World | null>,
   mouseBodyRef: RefObject<p2.Body | null>
 ) => {
-  if (!worldRef.current) return;
-
+  // If the mouse body already exists, don't create a new one
+  if (
+    !worldRef.current ||
+    (mouseBodyRef.current &&
+      worldHasId(worldRef.current, mouseBodyRef.current.id))
+  ) {
+    return;
+  }
   // Create a body for the mouse cursor
   const mouseBody = new p2.Body({
     type: p2.Body.KINEMATIC,
@@ -63,18 +68,14 @@ export const startInteraction = (
   worldPoint: [number, number],
   panOffset: [number, number],
   mouseEvent: MouseEvent | Touch,
-  readOnly: boolean,
   worldRef: RefObject<p2.World | null>,
   mouseBodyRef: RefObject<p2.Body | null>,
   mouseConstraintRef: RefObject<p2.Constraint | null>,
   selectedBodyRef: RefObject<p2.Body | null>,
-  isRotatingRef: RefObject<boolean>,
-  isDraggingRef: RefObject<boolean>,
-  isPanningRef: RefObject<boolean>,
-  lastPanPointRef: RefObject<[number, number] | null>,
-  onObjectSelected?: (body: p2.Body | null) => void,
-  setIsDragging?: (b: boolean) => void,
-  setIsRotating?: (b: boolean) => void
+  setIsRotating: ((b: boolean) => void) | undefined,
+  setIsDragging: ((b: boolean) => void) | undefined,
+  setIsPanning: ((b: boolean) => void) | undefined,
+  lastPanPointRef: RefObject<[number, number] | null>
 ) => {
   // If readOnly, do nothing
   if (!worldRef.current || !mouseBodyRef.current) {
@@ -82,29 +83,18 @@ export const startInteraction = (
   }
   // First check if we're near the rotation handle
   if (
-    !readOnly &&
     selectedBodyRef.current &&
     isNearRotationHandle(worldPoint, panOffset, selectedBodyRef)
   ) {
     // Start rotation mode
-    isRotatingRef.current = true;
-    if (setIsRotating) {
-      setIsRotating(true);
-    }
+    setIsRotating?.(true);
     return;
   }
   // Otherwise check for body selection/dragging
   const hitBody = getBodyAtPoint(worldRef, worldPoint, panOffset);
-  if (!readOnly && hitBody && isLetter(hitBody)) {
+  if (hitBody && isLetter(hitBody)) {
     selectedBodyRef.current = hitBody;
-    isDraggingRef.current = true;
-    // Notify parent component about the selected body
-    if (onObjectSelected) {
-      onObjectSelected(hitBody);
-    }
-    if (setIsDragging) {
-      setIsDragging(true);
-    }
+    setIsDragging?.(true);
     // Position the mouse body at the click point
     mouseBodyRef.current.position = worldPoint;
     // Create a constraint between the body and the mouse
@@ -114,15 +104,12 @@ export const startInteraction = (
     // Set constraint parameters for smoother dragging
     constraint.setStiffness(Math.min()); // Spring stiffness
     constraint.setRelaxation(1); // Relaxation for soft constraint
-    worldRef.current.addConstraint(constraint);
     mouseConstraintRef.current = constraint;
+    worldRef.current.addConstraint(constraint);
   } else {
     // Clicked on empty space, deselect
     selectedBodyRef.current = null;
-    if (onObjectSelected) {
-      onObjectSelected(null);
-    }
-    isPanningRef.current = true;
+    setIsPanning?.(true);
     lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
 };
@@ -132,20 +119,16 @@ export const updateInteraction = (
   worldPoint: [number, number],
   panOffset: [number, number],
   mouseEvent: MouseEvent | Touch,
-  readOnly: boolean,
-  worldRef: RefObject<p2.World | null>,
   mouseBodyRef: RefObject<p2.Body | null>,
   selectedBodyRef: RefObject<p2.Body | null>,
-  isRotatingRef: RefObject<boolean>,
-  isDraggingRef: RefObject<boolean>,
-  isPanningRef: RefObject<boolean>,
+  isRotating: boolean | undefined,
+  isDragging: boolean | undefined,
+  isPanning: boolean | undefined,
   lastPanPointRef: RefObject<[number, number] | null>,
   pixelsPerMeter: number,
-  onRotation?: (body: p2.Body, angle: number) => void,
-  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void,
-  setCursorState?: (c: CursorModes) => void
+  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void
 ) => {
-  if (isRotatingRef.current && selectedBodyRef.current && !readOnly) {
+  if (isRotating && selectedBodyRef.current) {
     // We're in rotation mode
     const body = selectedBodyRef.current;
     // Calculate new angle based on mouse position relative to body center
@@ -157,14 +140,10 @@ export const updateInteraction = (
     // Apply the rotation
     body.angle = newAngle;
     body.angularVelocity = 0; // Stop any existing rotation
-    // Notify parent component about rotation
-    if (onRotation) {
-      onRotation(body, newAngle);
-    }
-  } else if (isDraggingRef.current && mouseBodyRef.current && !readOnly) {
-    // Regular dragging mode
+  } else if (isDragging && mouseBodyRef.current) {
+    // Regular dragging mode - update mouse body position
     mouseBodyRef.current.position = worldPoint;
-  } else if (isPanningRef.current && lastPanPointRef.current && onPanChange) {
+  } else if (isPanning && lastPanPointRef.current && onPanChange) {
     // Calculate pan delta in world coordinates
     const dx =
       (mouseEvent.clientX - lastPanPointRef.current[0]) / pixelsPerMeter;
@@ -179,16 +158,6 @@ export const updateInteraction = (
 
     lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
-  // Update hover effects
-  if (setCursorState) {
-    if (isNearRotationHandle(worldPoint, panOffset, selectedBodyRef)) {
-      setCursorState(CursorModes.ROTATE);
-    } else if (getBodyAtPoint(worldRef, worldPoint, panOffset)) {
-      setCursorState(CursorModes.GRAB);
-    } else {
-      setCursorState(CursorModes.MOVE);
-    }
-  }
 };
 
 // End dragging or rotation
@@ -196,25 +165,24 @@ export const endInteraction = (
   worldRef: RefObject<p2.World | null>,
   mouseConstraintRef: RefObject<p2.Constraint | null>,
   selectedBodyRef: RefObject<p2.Body | null>,
-  isRotatingRef: RefObject<boolean>,
-  isDraggingRef: RefObject<boolean>,
-  isPanningRef: RefObject<boolean>,
+  isRotating: boolean | undefined,
+  isDragging: boolean | undefined,
+  isPanning: boolean | undefined,
+  setIsRotating: ((b: boolean) => void) | undefined,
+  setIsDragging: ((b: boolean) => void) | undefined,
+  setIsPanning: ((b: boolean) => void) | undefined,
   lastPanPointRef: RefObject<[number, number] | null>
 ) => {
-  if (isRotatingRef.current && selectedBodyRef.current) {
+  if (isRotating && selectedBodyRef.current) {
     // End rotation mode
-    isRotatingRef.current = false;
-  } else if (
-    isDraggingRef.current &&
-    worldRef.current &&
-    mouseConstraintRef.current
-  ) {
+    if (setIsRotating) setIsRotating(false);
+  } else if (isDragging && worldRef.current && mouseConstraintRef.current) {
     // End dragging mode
     worldRef.current.removeConstraint(mouseConstraintRef.current);
     mouseConstraintRef.current = null;
-    isDraggingRef.current = false;
-  } else if (isPanningRef.current) {
-    isPanningRef.current = false;
+    if (setIsDragging) setIsDragging(false);
+  } else if (isPanning) {
+    if (setIsPanning) setIsPanning(false);
     lastPanPointRef.current = null;
   }
 };

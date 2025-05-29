@@ -11,3 +11,5 @@ export const SPRING_STIFFNESS = 1500;
 export const SPRING_DAMPING = 500;
 export const WOOD_MATERIAL_FRICTION = 5;
 export const PUSH_VELOCITY = 3;
+export const SANDBOX_DAMPING = 1;
+export const TRIAL_DAMPING = 0.01;

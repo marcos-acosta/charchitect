@@ -2,15 +2,8 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import * as p2 from "p2-es";
 import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
-import {
-  CursorModes,
-  IDimensions,
-  IPolygons,
-  LETTERS,
-  Pages,
-} from "../logic/interfaces";
+import { IDimensions, IPolygons, LETTERS, Pages } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
-import { handleRotation } from "../logic/p2-util";
 import { computePixelsPerMeter } from "../logic/render-util";
 import {
   ANGULAR_SPEED_THRESHOLD,
@@ -23,8 +16,9 @@ import {
   allLettersStill,
   createWorld,
   removeLetterFromWorld,
-  runSimulation,
   startShakeTest,
+  startSimulation,
+  stopSimulation,
   updateHighestPoint,
 } from "../logic/game-util";
 import LETTER_POLYGONS from "../logic/letters";
@@ -37,11 +31,9 @@ interface GameProps {
 
 export default function Game(props: GameProps) {
   /** REFS */
-  // Create sandbox world (left side - interactive)
-  const sandboxWorldRef = useRef<p2.World | null>(null);
-  // Create trial world (right side - read-only with gravity)
-  const trialWorldRef = useRef<p2.World | null>(null);
-  // Track the highest point in the trial world
+  // Create single world reference
+  const worldRef = useRef<p2.World | null>(null);
+  // Track the highest point
   const highestPointRef = useRef<number>(0);
   // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -49,8 +41,8 @@ export default function Game(props: GameProps) {
   const allLettersStillRef = useRef<boolean>(true);
   // Timeout to detect stability
   const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Ref to track the ground in the trial world
-  const trialGroundRef = useRef<p2.Body>(null);
+  // Ref to track the ground
+  const groundRef = useRef<p2.Body>(null);
   // Track last simulation run time
   const lastSimulationTimeRef = useRef<number>(0);
   // Track last shake test time
@@ -65,10 +57,6 @@ export default function Game(props: GameProps) {
     useState<IDimensions | null>(null);
   // The letters currently in use
   const [lettersInUse, setLettersInUse] = useState<Record<number, LETTERS>>({});
-  // Mapping of trial world body IDs to letters
-  const [trialBodyIdToLetterMapping, setTrialBodyIdToLetterMapping] = useState<
-    Record<number, LETTERS>
-  >({});
   // Whether all letters are currently still
   const [allLettersStillState, setAllLettersStillState] = useState(true);
   // Whether the letters have been still for some time
@@ -88,7 +76,9 @@ export default function Game(props: GameProps) {
   });
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
-  const [cursorState, setCursorState] = useState(CursorModes.MOVE);
+  const [isPanning, setIsPanning] = useState(false);
+  // Whether we're in trial mode
+  const [isTrialMode, setIsTrialMode] = useState(false);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -110,31 +100,32 @@ export default function Game(props: GameProps) {
       height: Math.floor(height),
     });
 
-    if (sandboxWorldRef.current === null) {
-      sandboxWorldRef.current = createWorld(false)[0];
-      const [trialWorld, trialGroundBody] = createWorld(true);
-      trialWorldRef.current = trialWorld;
-      trialGroundRef.current = trialGroundBody;
+    if (worldRef.current === null) {
+      const [world, groundBody] = createWorld(false);
+      worldRef.current = world;
+      groundRef.current = groundBody;
     }
   };
 
-  const addLetterToTrial = (letterEnum: LETTERS, letterPolygons: IPolygons) => {
-    if (!sandboxWorldRef.current || !canvasContainerDimensions) {
+  const handleAddLetter = (letterEnum: LETTERS, letterPolygons: IPolygons) => {
+    if (!worldRef.current || !canvasContainerDimensions) {
       return;
     }
     const letterId = addLetterToWorld(
       letterPolygons,
-      sandboxWorldRef.current,
-      canvasContainerDimensions
+      worldRef.current,
+      canvasContainerDimensions,
+      undefined, // position
+      undefined // angle
     );
-    setLettersInUse({ ...lettersInUse, [letterId]: letterEnum });
+    setLettersInUse((prev) => ({ ...prev, [letterId]: letterEnum }));
   };
 
-  const removeLetterFromTrial = (letterEnum: LETTERS) => {
-    if (!sandboxWorldRef.current) {
+  const handleRemoveLetter = (letterEnum: LETTERS) => {
+    if (!worldRef.current) {
       return;
     }
-    removeLetterFromWorld(letterEnum, lettersInUse, sandboxWorldRef.current);
+    removeLetterFromWorld(letterEnum, lettersInUse, worldRef.current);
     setLettersInUse((prev) =>
       Object.fromEntries(
         Object.entries(prev).filter(([_, value]) => value !== letterEnum)
@@ -143,13 +134,13 @@ export default function Game(props: GameProps) {
   };
 
   const toggleLetter = (letterEnum: LETTERS) => {
-    if (!sandboxWorldRef.current) {
+    if (!worldRef.current) {
       return;
     }
     if (Object.values(lettersInUse).includes(letterEnum)) {
-      removeLetterFromTrial(letterEnum);
+      handleRemoveLetter(letterEnum);
     } else {
-      addLetterToTrial(letterEnum, LETTER_POLYGONS[letterEnum]);
+      handleAddLetter(letterEnum, LETTER_POLYGONS[letterEnum]);
     }
   };
 
@@ -172,13 +163,26 @@ export default function Game(props: GameProps) {
     setStabilized(false);
   };
 
+  const toggleTrialMode = () => {
+    if (!isTrialMode) {
+      // Switching to trial mode
+      startSimulation(worldRef.current as p2.World);
+      setStabilityTestStarted(false);
+      lastSimulationTimeRef.current = Date.now();
+    } else {
+      // Switching back to sandbox mode
+      stopSimulation(worldRef.current as p2.World);
+    }
+    setIsTrialMode(!isTrialMode);
+  };
+
   /** EFFECTS */
 
   // Set up keyboard event listeners
   useEffect(() => {
     addEventListener("keydown", handleKeypress);
     return () => removeEventListener("keydown", handleKeypress);
-  }, [sandboxWorldRef.current, lettersInUse]);
+  }, [worldRef.current, lettersInUse]);
 
   // Create canvas and listen for canvas size updates
   useEffect(() => {
@@ -193,9 +197,9 @@ export default function Game(props: GameProps) {
   }, [canvasContainerRef.current]);
 
   const updateAllLettersStill = () => {
-    if (trialWorldRef.current) {
+    if (worldRef.current) {
       const allLettersStillResult = allLettersStill(
-        trialWorldRef.current,
+        worldRef.current,
         LINEAR_SPEED_THRESHOLD,
         ANGULAR_SPEED_THRESHOLD
       );
@@ -220,7 +224,7 @@ export default function Game(props: GameProps) {
   };
 
   const afterStep = () => {
-    updateHighestPoint(trialWorldRef.current, highestPointRef);
+    updateHighestPoint(worldRef.current, highestPointRef);
     updateAllLettersStill();
   };
 
@@ -228,26 +232,23 @@ export default function Game(props: GameProps) {
     if (!gravityTrialRun) {
       setGravityTrialRun(true);
     }
-    const newMapping = runSimulation(
-      sandboxWorldRef,
-      trialWorldRef,
-      lettersInUse
-    );
-    setTrialBodyIdToLetterMapping(newMapping);
+    if (worldRef.current) {
+      worldRef.current.gravity[1] = -9.82;
+    }
     setStabilityTestStarted(false);
     lastSimulationTimeRef.current = Date.now();
   };
 
   const runShakeTestCallback = () => {
-    if (trialGroundRef.current) {
-      startShakeTest(trialGroundRef.current);
+    if (groundRef.current) {
+      startShakeTest(groundRef.current);
       setStabilityTestStarted(true);
       lastShakeTestTimeRef.current = Date.now();
     }
   };
 
   const submitScoreCallback = () => {
-    if (trialWorldRef.current) {
+    if (worldRef.current) {
       setShowNamePopup(true);
     }
   };
@@ -257,12 +258,12 @@ export default function Game(props: GameProps) {
 
     localStorage.setItem("playerName", playerName);
     setIsSubmitting(true);
-    if (trialWorldRef.current) {
+    if (worldRef.current) {
       submitScore(
         playerName,
         highestPointRef.current,
-        trialWorldRef.current,
-        trialBodyIdToLetterMapping
+        worldRef.current,
+        lettersInUse
       ).then(() => {
         setIsSubmitting(false);
         setShowNamePopup(false);
@@ -305,10 +306,12 @@ export default function Game(props: GameProps) {
           <div className={styles.canvasesAndControls}>
             <div className={styles.controlsContainer}>
               <button
-                onClick={runSimulationCallback}
+                onClick={toggleTrialMode}
                 className={styles.controlsButton}
               >
-                <div className={styles.buttonText}>RUN TRIAL</div>
+                <div className={styles.buttonText}>
+                  {isTrialMode ? "EXIT TRIAL" : "RUN TRIAL"}
+                </div>
                 <div className={styles.shortcut}>[enter]</div>
               </button>
               <button
@@ -362,47 +365,32 @@ export default function Game(props: GameProps) {
                   ? styles.drag
                   : isRotating
                   ? styles.rotating
-                  : cursorState === CursorModes.GRAB
-                  ? styles.grab
-                  : cursorState === CursorModes.ROTATE
-                  ? styles.rotate
+                  : isPanning
+                  ? styles.panning
                   : styles.move
               )}
               ref={canvasContainerRef}
             >
-              {sandboxWorldRef.current &&
+              {worldRef.current &&
                 canvasContainerDimensions &&
                 pixelsPerMeter && (
                   <Canvas
-                    worldRef={sandboxWorldRef as RefObject<p2.World>}
+                    worldRef={worldRef as RefObject<p2.World>}
                     width={canvasContainerDimensions?.width}
                     height={canvasContainerDimensions?.height}
                     pixelsPerMeter={pixelsPerMeter}
-                    onRotation={handleRotation}
                     panOffset={panOffset}
                     onPanChange={setPanOffset}
                     lettersInUse={lettersInUse}
-                    setCursorState={setCursorState}
+                    isDragging={isDragging}
+                    isRotating={isRotating}
+                    isPanning={isPanning}
                     setIsDragging={setIsDragging}
                     setIsRotating={setIsRotating}
-                  />
-                )}
-            </div>
-            <div className={styles.canvasContainer}>
-              {trialWorldRef.current &&
-                canvasContainerDimensions &&
-                pixelsPerMeter && (
-                  <Canvas
-                    worldRef={trialWorldRef as RefObject<p2.World>}
-                    width={canvasContainerDimensions?.width}
-                    height={canvasContainerDimensions?.height}
-                    pixelsPerMeter={pixelsPerMeter}
-                    readOnly={true} // Make trial canvas read-only
-                    highestPoint={highestPointRef} // Pass the highest point
+                    setIsPanning={setIsPanning}
+                    isTrialMode={isTrialMode}
+                    highestPoint={highestPointRef}
                     onAfterStep={afterStep}
-                    panOffset={panOffset}
-                    onPanChange={setPanOffset}
-                    lettersInUse={trialBodyIdToLetterMapping}
                   />
                 )}
             </div>

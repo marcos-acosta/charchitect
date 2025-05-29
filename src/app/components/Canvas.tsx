@@ -19,7 +19,7 @@ interface CanvasProps {
   width: number;
   height: number;
   pixelsPerMeter: number;
-  highestPoint?: RefObject<number>;
+  highestPoint?: RefObject<number | null>;
   onAfterStep?: () => void;
   panOffset: [number, number];
   onPanChange: (fn: (offset: [number, number]) => [number, number]) => void;

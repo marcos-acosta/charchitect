@@ -304,19 +304,19 @@ export const removeLetterFromWorld = (
 
 export const updateHighestPoint = (
   trialWorld: p2.World | null,
-  highestPointRef: RefObject<number>
+  highestPointRef: RefObject<number | null>
 ) => {
-  if (!trialWorld || trialWorld.bodies.length <= 1) {
-    // Only ground body or no bodies
-    highestPointRef.current = 0;
+  if (!trialWorld) {
+    return;
+  }
+  const bodiesOfInterest = trialWorld.bodies.filter((body) =>
+    isTrialLetter(body)
+  );
+  if (bodiesOfInterest.length === 0) {
     return;
   }
   let highestPoint = 0;
-  trialWorld.bodies.forEach((body) => {
-    // Skip ground body
-    if (body.type === p2.Body.STATIC) {
-      return;
-    }
+  bodiesOfInterest.forEach((body) => {
     // Find the highest point of this body
     body.updateAABB();
     const bodyHeight = body.aabb.upperBound[1];
@@ -325,46 +325,6 @@ export const updateHighestPoint = (
     }
   });
   highestPointRef.current = highestPoint;
-};
-
-// Copy the sandbox world to the trial world
-const runSimulationOld = (
-  sandboxWorldRef: RefObject<p2.World | null>,
-  trialWorldRef: RefObject<p2.World | null>,
-  lettersInUse: Record<number, LETTERS>
-): Record<number, LETTERS> => {
-  const sandboxWorld = sandboxWorldRef.current;
-  const trialWorld = trialWorldRef.current;
-
-  if (!sandboxWorld || !trialWorld) return {};
-
-  // Clear existing non-static bodies from trial world
-  const bodiesToRemove = [];
-  for (let i = 0; i < trialWorld.bodies.length; i++) {
-    const body = trialWorld.bodies[i];
-    if (body.shapes[0] && body.shapes[0].type === p2.Shape.BOX) {
-      continue;
-    }
-    bodiesToRemove.push(body);
-  }
-
-  // Remove bodies from trial world
-  bodiesToRemove.forEach((body) => {
-    trialWorld.removeBody(body);
-  });
-
-  // Create a mapping of trial body IDs to original letters
-  const trialBodyIdToLetterMapping: Record<number, LETTERS> = {};
-
-  // Copy bodies from sandbox to trial
-  sandboxWorld.bodies.forEach((body) => {
-    const newBody = cloneBodyToWorld(body, trialWorld);
-    if (newBody && lettersInUse[body.id]) {
-      trialBodyIdToLetterMapping[newBody.id] = lettersInUse[body.id];
-    }
-  });
-
-  return trialBodyIdToLetterMapping;
 };
 
 export const startShakeTest = (body: p2.Body) => {

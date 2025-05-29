@@ -17,7 +17,7 @@ interface CanvasPainterProps {
   pixelsPerMeter: number;
   world: p2.World;
   panOffset: [number, number];
-  highestPoint?: number;
+  highestPoint?: number | null;
   selectedBody?: p2.Body | null;
   readOnly?: boolean;
   mouseBody?: p2.Body | null;
@@ -44,7 +44,7 @@ export const paintCanvas = (props: CanvasPainterProps) => {
   ctx.translate(panOffset[0], panOffset[1]);
 
   // Draw highest point if provided
-  if (highestPoint !== undefined) {
+  if (highestPoint !== undefined && highestPoint !== null) {
     drawHighestPoint(ctx, highestPoint, width / pixelsPerMeter);
   }
 

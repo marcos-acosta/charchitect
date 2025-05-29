@@ -34,7 +34,7 @@ export default function Game(props: GameProps) {
   // Create single world reference
   const worldRef = useRef<p2.World | null>(null);
   // Track the highest point
-  const highestPointRef = useRef<number>(0);
+  const highestPointRef = useRef<number | null>(null);
   // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   // Whether all letters are currently still
@@ -172,6 +172,7 @@ export default function Game(props: GameProps) {
     } else {
       // Switching back to sandbox mode
       stopSimulation(worldRef.current as p2.World);
+      highestPointRef.current = null;
     }
     setIsTrialMode(!isTrialMode);
   };
@@ -228,17 +229,6 @@ export default function Game(props: GameProps) {
     updateAllLettersStill();
   };
 
-  const runSimulationCallback = () => {
-    if (!gravityTrialRun) {
-      setGravityTrialRun(true);
-    }
-    if (worldRef.current) {
-      worldRef.current.gravity[1] = -9.82;
-    }
-    setStabilityTestStarted(false);
-    lastSimulationTimeRef.current = Date.now();
-  };
-
   const runShakeTestCallback = () => {
     if (groundRef.current) {
       startShakeTest(groundRef.current);
@@ -261,7 +251,7 @@ export default function Game(props: GameProps) {
     if (worldRef.current) {
       submitScore(
         playerName,
-        highestPointRef.current,
+        highestPointRef.current ?? 0,
         worldRef.current,
         lettersInUse
       ).then(() => {

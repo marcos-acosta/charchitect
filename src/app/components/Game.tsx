@@ -67,6 +67,8 @@ export default function Game(props: GameProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Whether to show the name input popup
   const [showNamePopup, setShowNamePopup] = useState(false);
+  // Whether the user is hovering over something grabbable
+  const [canGrab, setCanGrab] = useState(false);
   // The player's name
   const [playerName, setPlayerName] = useState(() => {
     if (typeof window !== "undefined") {
@@ -352,11 +354,13 @@ export default function Game(props: GameProps) {
               className={combineClasses(
                 styles.canvasContainer,
                 isDragging
-                  ? styles.drag
+                  ? styles.dragging
                   : isRotating
                   ? styles.rotating
                   : isPanning
                   ? styles.panning
+                  : canGrab
+                  ? styles.canGrab
                   : styles.move
               )}
               ref={canvasContainerRef}
@@ -381,6 +385,8 @@ export default function Game(props: GameProps) {
                     isTrialMode={isTrialMode}
                     highestPoint={highestPointRef}
                     onAfterStep={afterStep}
+                    canGrab={canGrab}
+                    setCanGrab={setCanGrab}
                   />
                 )}
             </div>

@@ -139,22 +139,18 @@
   cursor: move;
 }
 
-.move canvas {
+.panning canvas {
   cursor: move;
-}
-
-.grab canvas {
-  cursor: grab;
 }
 
 .rotating canvas {
   cursor: grabbing;
 }
 
-.rotate canvas {
-  cursor: grab;
+.dragging canvas {
+  cursor: grabbing;
 }
 
-.drag canvas {
-  cursor: grabbing;
+.canGrab canvas {
+  cursor: grab;
 }

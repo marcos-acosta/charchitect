@@ -116,6 +116,7 @@ export const startInteraction = (
 
 // Update dragging or rotation
 export const updateInteraction = (
+  worldRef: RefObject<p2.World | null>,
   worldPoint: [number, number],
   panOffset: [number, number],
   mouseEvent: MouseEvent | Touch,
@@ -126,6 +127,8 @@ export const updateInteraction = (
   isPanning: boolean | undefined,
   lastPanPointRef: RefObject<[number, number] | null>,
   pixelsPerMeter: number,
+  canGrab: boolean,
+  setCanGrab: (b: boolean) => void,
   onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void
 ) => {
   if (isRotating && selectedBodyRef.current) {
@@ -158,6 +161,13 @@ export const updateInteraction = (
 
     lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
+  const hitBody = getBodyAtPoint(worldRef, worldPoint, panOffset);
+  const nearRotationHandle = isNearRotationHandle(
+    worldPoint,
+    panOffset,
+    selectedBodyRef
+  );
+  setCanGrab(Boolean(hitBody) || nearRotationHandle);
 };
 
 // End dragging or rotation

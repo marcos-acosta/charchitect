@@ -25,8 +25,7 @@ import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
 import { RefObject } from "react";
 
 const getGroundCenter = (dimensionsInMeters: IDimensions) => {
-  const groundEnd = dimensionsInMeters.width * 0.9;
-  return groundEnd - GROUND_WIDTH_METERS / 2;
+  return dimensionsInMeters.width / 2;
 };
 
 export const createWorld = (

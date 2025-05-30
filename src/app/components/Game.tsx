@@ -338,161 +338,165 @@ export default function Game(props: GameProps) {
   return (
     <>
       <div className={styles.pageOuterContainer}>
-        <div
-          className={combineClasses(
-            styles.runTypeContainer,
-            isTrialMode && styles.trialMode
-          )}
-        >
-          <span
-            className={combineClasses(
-              "material-symbols-outlined",
-              styles.runTypeIcon
-            )}
-          >
-            {isTrialMode ? "directions_run" : "construction"}
-          </span>
-          <span>{isTrialMode ? "Testing" : "Building"}</span>
-        </div>
-        <div className={styles.commandSidebar}>
+        <div className={styles.sidebarAndCanvas}>
+          <div className={styles.commandSidebar}>
+            <div
+              className={combineClasses(
+                styles.titleContainer,
+                styles.marginBottomSmall
+              )}
+            >
+              Typesetter
+            </div>
+            <div className={styles.paddingContainer}>
+              <div
+                className={combineClasses(
+                  styles.letterGrid,
+                  styles.marginBottomMedium
+                )}
+              >
+                {Object.values(LETTERS).map((letter) => (
+                  <LetterButton
+                    letter={letter}
+                    used={Object.values(lettersInUse).includes(letter)}
+                    onClick={() => toggleLetter(letter)}
+                    key={letter}
+                    disabled={isTrialMode}
+                  />
+                ))}
+              </div>
+              <div
+                className={combineClasses(
+                  styles.actionButtonContainer,
+                  styles.marginBottomMedium
+                )}
+              >
+                <ActionButton
+                  text={"Reset view"}
+                  callback={resetView}
+                  disabled={isViewAtOrigin}
+                />
+                <ActionButton
+                  text={"Clear all letters"}
+                  callback={clearAllLettersCallback}
+                  disabled={isTrialMode || !worldHasManipulableLetters}
+                />
+                <ActionButton
+                  text={isTrialMode ? "Return to sandbox" : "Run trial"}
+                  callback={toggleTrialMode}
+                  disabled={!canRunTrial}
+                />
+              </div>
+              <div
+                className={combineClasses(
+                  styles.progressContainer,
+                  styles.marginBottomMedium
+                )}
+              >
+                {Object.values(TrialStage)
+                  .filter((key) => !isNaN(Number(key)) && Number(key) > 0)
+                  .map((trialStage_) => (
+                    <div className={styles.progressRow} key={trialStage_}>
+                      {trialStage_ !== TrialStage.STABLE_AFTER_EARTHQUAKE && (
+                        <div className={styles.statusLine} />
+                      )}
+                      <div className={styles.statusName}>
+                        <div>
+                          {STAGE_TO_DESCRIPTION[trialStage_ as TrialStage]}
+                        </div>
+                        {trialStage >= (trialStage_ as number) && (
+                          <div className={styles.checkMarkContainer}>
+                            <span
+                              className={combineClasses(
+                                styles.checkMark,
+                                "material-symbols-outlined"
+                              )}
+                            >
+                              check
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                <div
+                  className={styles.progressBall}
+                  style={{
+                    top: `${
+                      3 *
+                        Math.min(
+                          trialStage,
+                          TrialStage.STABLE_AFTER_EARTHQUAKE - 1
+                        ) -
+                      0.5 +
+                      1.5
+                    }vw`,
+                  }}
+                />
+              </div>
+              <ActionButton
+                text={"Submit type stack"}
+                callback={submitScoreCallback}
+                disabled={!canSubmitScore}
+              />
+            </div>
+          </div>
           <div
             className={combineClasses(
-              styles.titleContainer,
-              styles.marginBottomSmall
+              styles.canvasContainer,
+              isDragging
+                ? styles.dragging
+                : isRotating
+                ? styles.rotating
+                : isPanning
+                ? styles.panning
+                : canGrab
+                ? styles.canGrab
+                : styles.move
             )}
+            ref={canvasContainerRef}
           >
-            Typesetter
-          </div>
-          <div className={styles.paddingContainer}>
-            <div
-              className={combineClasses(
-                styles.letterGrid,
-                styles.marginBottomMedium
-              )}
-            >
-              {Object.values(LETTERS).map((letter) => (
-                <LetterButton
-                  letter={letter}
-                  used={Object.values(lettersInUse).includes(letter)}
-                  onClick={() => toggleLetter(letter)}
-                  key={letter}
-                  disabled={isTrialMode}
+            {worldRef.current &&
+              canvasContainerDimensions &&
+              pixelsPerMeter && (
+                <Canvas
+                  worldRef={worldRef as RefObject<p2.World>}
+                  width={canvasContainerDimensions?.width}
+                  height={canvasContainerDimensions?.height}
+                  pixelsPerMeter={pixelsPerMeter}
+                  panOffset={panOffset}
+                  onPanChange={setPanOffset}
+                  lettersInUse={lettersInUse}
+                  isDragging={isDragging}
+                  isRotating={isRotating}
+                  isPanning={isPanning}
+                  setIsDragging={setIsDragging}
+                  setIsRotating={setIsRotating}
+                  setIsPanning={setIsPanning}
+                  isTrialMode={isTrialMode}
+                  highestPoint={highestPointRef}
+                  onAfterStep={afterStep}
+                  setCanGrab={setCanGrab}
                 />
-              ))}
-            </div>
-            <div
-              className={combineClasses(
-                styles.actionButtonContainer,
-                styles.marginBottomMedium
               )}
-            >
-              <ActionButton
-                text={"Reset view"}
-                callback={resetView}
-                disabled={isViewAtOrigin}
-              />
-              <ActionButton
-                text={"Clear all letters"}
-                callback={clearAllLettersCallback}
-                disabled={isTrialMode || !worldHasManipulableLetters}
-              />
-              <ActionButton
-                text={isTrialMode ? "Return to sandbox" : "Run trial"}
-                callback={toggleTrialMode}
-                disabled={!canRunTrial}
-              />
-            </div>
-            <div
-              className={combineClasses(
-                styles.progressContainer,
-                styles.marginBottomMedium
-              )}
-            >
-              {Object.values(TrialStage)
-                .filter((key) => !isNaN(Number(key)) && Number(key) > 0)
-                .map((trialStage_) => (
-                  <div className={styles.progressRow} key={trialStage_}>
-                    {trialStage_ !== TrialStage.STABLE_AFTER_EARTHQUAKE && (
-                      <div className={styles.statusLine} />
-                    )}
-                    <div className={styles.statusName}>
-                      <div>
-                        {STAGE_TO_DESCRIPTION[trialStage_ as TrialStage]}
-                      </div>
-                      {trialStage >= (trialStage_ as number) && (
-                        <div className={styles.checkMarkContainer}>
-                          <span
-                            className={combineClasses(
-                              styles.checkMark,
-                              "material-symbols-outlined"
-                            )}
-                          >
-                            check
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              <div
-                className={styles.progressBall}
-                style={{
-                  top: `${
-                    3 *
-                      Math.min(
-                        trialStage,
-                        TrialStage.STABLE_AFTER_EARTHQUAKE - 1
-                      ) -
-                    0.5 +
-                    1.5
-                  }vw`,
-                }}
-              />
-            </div>
-            <ActionButton
-              text={"Submit type stack"}
-              callback={submitScoreCallback}
-              disabled={!canSubmitScore}
-            />
           </div>
         </div>
-        <div
+      </div>
+      <div
+        className={combineClasses(
+          styles.runTypeContainer,
+          isTrialMode && styles.trialMode
+        )}
+      >
+        <span
           className={combineClasses(
-            styles.canvasContainer,
-            isDragging
-              ? styles.dragging
-              : isRotating
-              ? styles.rotating
-              : isPanning
-              ? styles.panning
-              : canGrab
-              ? styles.canGrab
-              : styles.move
+            "material-symbols-outlined",
+            styles.runTypeIcon
           )}
-          ref={canvasContainerRef}
         >
-          {worldRef.current && canvasContainerDimensions && pixelsPerMeter && (
-            <Canvas
-              worldRef={worldRef as RefObject<p2.World>}
-              width={canvasContainerDimensions?.width}
-              height={canvasContainerDimensions?.height}
-              pixelsPerMeter={pixelsPerMeter}
-              panOffset={panOffset}
-              onPanChange={setPanOffset}
-              lettersInUse={lettersInUse}
-              isDragging={isDragging}
-              isRotating={isRotating}
-              isPanning={isPanning}
-              setIsDragging={setIsDragging}
-              setIsRotating={setIsRotating}
-              setIsPanning={setIsPanning}
-              isTrialMode={isTrialMode}
-              highestPoint={highestPointRef}
-              onAfterStep={afterStep}
-              setCanGrab={setCanGrab}
-            />
-          )}
-        </div>
+          {isTrialMode ? "directions_run" : "construction"}
+        </span>
+        <span>{isTrialMode ? "Testing" : "Building"}</span>
       </div>
       {showNamePopup && (
         <div className={styles.submissionDialogContainer}>

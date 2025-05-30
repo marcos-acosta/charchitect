@@ -1,9 +1,6 @@
 .pageOuterContainer {
   width: 100vw;
   height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-family: "Times New Roman", Times, serif;
   overflow-x: hidden;
   overflow-y: hidden;
@@ -18,10 +15,14 @@
   height: 100%;
 }
 
+.sidebarAndCanvas {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: auto 1fr;
+}
+
 .commandSidebar {
-  position: absolute;
-  top: 0;
-  left: 0;
   display: flex;
   flex-direction: column;
   width: 30vw;

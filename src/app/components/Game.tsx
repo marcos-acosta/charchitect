@@ -24,7 +24,9 @@ import {
   addLetterToWorld,
   allLettersStill,
   createWorld,
+  deleteAllManipulableLetters,
   findHighestBody,
+  hasManipulableLetters,
   removeLetterFromWorld,
   startShakeTest,
   startSimulation,
@@ -39,6 +41,16 @@ import ActionButton from "./ActionButton";
 interface GameProps {
   setPage: (page: Pages) => void;
 }
+
+const STAGE_TO_DESCRIPTION = {
+  [TrialStage.NOT_STARTED]: "Not started",
+  [TrialStage.APPLIED_GRAVITY]: "Applied gravity",
+  [TrialStage.LETTERS_STILL_AFTER_GRAVITY]: "All letters still",
+  [TrialStage.STABLE_AFTER_GRAVITY]: "3 seconds elapsed",
+  [TrialStage.APPLIED_EARTHQUAKE]: "Applied earthquake",
+  [TrialStage.LETTERS_STILL_AFTER_EARTHQUAKE]: "All letters still",
+  [TrialStage.STABLE_AFTER_EARTHQUAKE]: "3 seconds elapsed",
+};
 
 export default function Game(props: GameProps) {
   /** REFS */
@@ -281,6 +293,13 @@ export default function Game(props: GameProps) {
     }
   };
 
+  const clearAllLettersCallback = () => {
+    if (worldRef.current) {
+      deleteAllManipulableLetters(worldRef.current);
+      setLettersInUse({});
+    }
+  };
+
   const handleNameSubmit = () => {
     if (!playerName.trim()) return;
 
@@ -306,6 +325,11 @@ export default function Game(props: GameProps) {
     !isSubmitting && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE;
 
   const isViewAtOrigin = panOffset[0] === 0 && panOffset[1] === 0;
+
+  const worldHasManipulableLetters =
+    worldRef.current && hasManipulableLetters(worldRef.current);
+
+  const canRunTrial = isTrialMode || worldHasManipulableLetters;
 
   return (
     <>
@@ -351,22 +375,80 @@ export default function Game(props: GameProps) {
                 />
               ))}
             </div>
-            <div className={styles.actionButtonContainer}>
+            <div
+              className={combineClasses(
+                styles.actionButtonContainer,
+                styles.marginBottomMedium
+              )}
+            >
               <ActionButton
                 text={"Reset view"}
                 callback={resetView}
                 disabled={isViewAtOrigin}
               />
               <ActionButton
-                text={isTrialMode ? "Return to sandbox" : "Run trial"}
-                callback={toggleTrialMode}
+                text={"Clear all letters"}
+                callback={clearAllLettersCallback}
+                disabled={isTrialMode || !worldHasManipulableLetters}
               />
               <ActionButton
-                text={"Submit type stack"}
-                callback={submitScoreCallback}
-                disabled={!canSubmitScore}
+                text={isTrialMode ? "Return to sandbox" : "Run trial"}
+                callback={toggleTrialMode}
+                disabled={!canRunTrial}
               />
             </div>
+            <div
+              className={combineClasses(
+                styles.progressContainer,
+                styles.marginBottomMedium
+              )}
+            >
+              {Object.values(TrialStage)
+                .filter((key) => !isNaN(Number(key)) && Number(key) > 0)
+                .map((trialStage_) => (
+                  <div className={styles.progressRow} key={trialStage_}>
+                    {trialStage_ !== TrialStage.STABLE_AFTER_EARTHQUAKE && (
+                      <div className={styles.statusLine} />
+                    )}
+                    <div className={styles.statusName}>
+                      <div>
+                        {STAGE_TO_DESCRIPTION[trialStage_ as TrialStage]}
+                      </div>
+                      {trialStage >= (trialStage_ as number) && (
+                        <div className={styles.checkMarkContainer}>
+                          <span
+                            className={combineClasses(
+                              styles.checkMark,
+                              "material-symbols-outlined"
+                            )}
+                          >
+                            check
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              <div
+                className={styles.progressBall}
+                style={{
+                  top: `${
+                    3 *
+                      Math.min(
+                        trialStage,
+                        TrialStage.STABLE_AFTER_EARTHQUAKE - 1
+                      ) -
+                    0.5 +
+                    1.5
+                  }vw`,
+                }}
+              />
+            </div>
+            <ActionButton
+              text={"Submit type stack"}
+              callback={submitScoreCallback}
+              disabled={!canSubmitScore}
+            />
           </div>
         </div>
         <div

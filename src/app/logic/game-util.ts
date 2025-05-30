@@ -222,6 +222,21 @@ const clearAllTrialLetters = (world: p2.World) => {
   });
 };
 
+export const hasManipulableLetters = (world: p2.World) =>
+  world.bodies.some((body) => isManipulableLetter(body));
+
+export const deleteAllManipulableLetters = (world: p2.World) => {
+  const lettersToDelete: p2.Body[] = [];
+  for (const body of world.bodies) {
+    if (isManipulableLetter(body)) {
+      lettersToDelete.push(body);
+    }
+  }
+  for (const letter of lettersToDelete) {
+    world.removeBody(letter);
+  }
+};
+
 const clearAllManipulableLetters = (world: p2.World) => {
   for (const body of world.bodies) {
     if (isManipulableLetter(body)) {

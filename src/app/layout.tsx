@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { B612_Mono, Noto_Serif } from "next/font/google";
+import { B612_Mono, Inter, Noto_Serif } from "next/font/google";
 import "./globals.css";
 import { combineClasses } from "./logic/util";
 
 const notoSerif = Noto_Serif({
   variable: "--font-noto-serif",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -26,7 +31,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={combineClasses(notoSerif.variable, mono.variable)}>
+      <body
+        className={combineClasses(
+          notoSerif.variable,
+          mono.variable,
+          inter.variable
+        )}
+      >
         {children}
       </body>
     </html>

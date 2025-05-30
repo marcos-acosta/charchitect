@@ -34,6 +34,7 @@ import {
 import LETTER_POLYGONS from "../logic/letters";
 import { submitScore } from "../logic/server";
 import { combineClasses } from "../logic/util";
+import ActionButton from "./ActionButton";
 
 interface GameProps {
   setPage: (page: Pages) => void;
@@ -298,26 +299,59 @@ export default function Game(props: GameProps) {
     }
   };
 
+  const resetView = () => setPanOffset([0, 0]);
+
   /** BUTTON STATES */
   const canSubmitScore =
     !isSubmitting && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE;
+
+  const isViewAtOrigin = panOffset[0] === 0 && panOffset[1] === 0;
 
   return (
     <>
       <div className={styles.pageOuterContainer}>
         <div className={styles.commandSidebar}>
-          <div className={styles.titleContainer}>Typesetter</div>
-          <div className={styles.letterGrid}>
-            {Object.values(LETTERS).map((letter) => (
-              <LetterButton
-                letter={letter}
-                used={Object.values(lettersInUse).includes(letter)}
-                onClick={() => toggleLetter(letter)}
-                key={letter}
-              />
-            ))}
+          <div
+            className={combineClasses(
+              styles.titleContainer,
+              styles.marginBottomSmall
+            )}
+          >
+            Typesetter
           </div>
-          <button onClick={toggleTrialMode}>toggle</button>
+          <div className={styles.paddingContainer}>
+            <div
+              className={combineClasses(
+                styles.letterGrid,
+                styles.marginBottomMedium
+              )}
+            >
+              {Object.values(LETTERS).map((letter) => (
+                <LetterButton
+                  letter={letter}
+                  used={Object.values(lettersInUse).includes(letter)}
+                  onClick={() => toggleLetter(letter)}
+                  key={letter}
+                />
+              ))}
+            </div>
+            <div className={styles.actionButtonContainer}>
+              <ActionButton
+                text={"Reset view"}
+                callback={resetView}
+                disabled={isViewAtOrigin}
+              />
+              <ActionButton
+                text={isTrialMode ? "Return to sandbox" : "Run trial"}
+                callback={toggleTrialMode}
+              />
+              <ActionButton
+                text={"Submit type stack"}
+                callback={submitScoreCallback}
+                disabled={!canSubmitScore}
+              />
+            </div>
+          </div>
         </div>
         <div
           className={combineClasses(

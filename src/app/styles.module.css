@@ -24,10 +24,101 @@
   left: 0;
   display: flex;
   flex-direction: column;
-  width: 500px;
+  width: 30vw;
   height: 100%;
   padding-top: 20px;
-  pointer-events: none;
+}
+
+.titleContainer {
+  font-family: var(--font-noto-serif), serif;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  text-transform: uppercase;
+  font-size: 3.6vw;
+  font-weight: 900;
+}
+
+.paddingContainer {
+  padding-left: 2.7vw;
+  padding-right: 2.7vw;
+}
+
+.letterGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  row-gap: 0.3vw;
+  padding: 1vw;
+}
+
+.letterButtonContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.letterButton {
+  background-color: unset;
+  border: none;
+  font-family: var(--font-b12-mono);
+  font-size: 2vw;
+  padding: 0.6vw;
+  padding-top: 0.2vw;
+  padding-bottom: 0.2vw;
+  cursor: pointer;
+}
+
+.letterButton.usedLetterButton {
+  background-color: var(--foreground);
+  color: var(--background);
+}
+
+.actionButtonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.actionButton {
+  border: 1px solid var(--foreground);
+  border-radius: 0;
+  background-color: var(--background);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  padding: 1vw;
+  padding-top: 0.6vw;
+  padding-bottom: 0.6vw;
+  font-size: 1.5vw;
+  cursor: pointer;
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonText {
+  flex-grow: 1;
+  text-align: left;
+  text-transform: uppercase;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.arrowContainer {
+  flex-shrink: 1;
+  padding-right: 1vw;
+  transition-property: padding-right;
+  transition-duration: 0.25s;
+}
+
+.arrowContainer.hovering {
+  padding-right: 0;
 }
 
 .submissionDialogContainer {
@@ -67,47 +158,10 @@
   cursor: grab;
 }
 
-.titleContainer {
-  font-family: var(--font-noto-serif), serif;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  text-transform: uppercase;
-  font-size: 60px;
-  font-weight: 900;
+.marginBottomSmall {
   margin-bottom: 10px;
 }
 
-.letterGrid {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  padding-left: 35px;
-  padding-right: 35px;
-  row-gap: 5px;
-}
-
-.letterButtonContainer {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.letterButton {
-  background-color: unset;
-  border: none;
-  font-family: var(--font-b12-mono);
-  font-size: 35px;
-  padding: 10px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  cursor: pointer;
-}
-
-.letterButton.usedLetterButton {
-  background-color: var(--foreground);
-  color: var(--background);
+.marginBottomMedium {
+  margin-bottom: 20px;
 }

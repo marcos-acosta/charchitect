@@ -110,6 +110,39 @@
   font-family: var(--font-inter), sans-serif;
 }
 
+.runTypeContainer {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-family: var(--font-inter);
+  text-transform: uppercase;
+  font-weight: bold;
+  color: var(--background);
+  background-color: var(--foreground);
+  padding: 0.5vw;
+  padding-left: 1.1vw;
+  padding-right: 1.1vw;
+  font-size: 1.5vw;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5vw;
+}
+
+.runTypeIcon {
+  font-family: "Construction Icon";
+  font-size: 1.5vw;
+}
+
+.trialMode .runTypeIcon {
+  font-family: "Running Icon";
+}
+
+.runTypeContainer.trialMode {
+  background-color: var(--red);
+}
+
 .arrowContainer {
   flex-shrink: 1;
   padding-right: 1vw;

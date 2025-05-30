@@ -310,6 +310,22 @@ export default function Game(props: GameProps) {
   return (
     <>
       <div className={styles.pageOuterContainer}>
+        <div
+          className={combineClasses(
+            styles.runTypeContainer,
+            isTrialMode && styles.trialMode
+          )}
+        >
+          <span
+            className={combineClasses(
+              "material-symbols-outlined",
+              styles.runTypeIcon
+            )}
+          >
+            {isTrialMode ? "directions_run" : "construction"}
+          </span>
+          <span>{isTrialMode ? "Testing" : "Building"}</span>
+        </div>
         <div className={styles.commandSidebar}>
           <div
             className={combineClasses(

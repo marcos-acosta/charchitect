@@ -1,6 +1,39 @@
+@font-face {
+  font-family: "Construction Icon";
+  font-style: normal;
+  font-weight: 100 700;
+  src: url(https://fonts.gstatic.com/icon/font?kit=kJF1BvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oDMzByHX9rA6RzaxHMPdY43zj-jCxv3fzvRNU22ZXGJpEpjC_1v-p_4MrImHCIJIZrDCvHOelbd5zrDAt69179tqS7d2lF-ZdQTlX1f8&skey=b8dc2088854b122f&v=v247)
+    format("woff");
+}
+
+@font-face {
+  font-family: "Running Icon";
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/icon/font?kit=kJF1BvYX7BgnkSrUwT8OhrdQw4oELdPIeeII9v6oDMzByHX9rA6RzaxHMPdY43zj-jCxv3fzvRNU22ZXGJpEpjC_1v-p_4MrImHCIJIZrDCvHOelbd5zrDAt695H_NCY9sC-EP8sdDk0MM8CUT8&skey=b8dc2088854b122f&v=v247)
+    format("woff");
+}
+
+.material-symbols-outlined {
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -moz-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -moz-osx-font-smoothing: grayscale;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #1e1e1e;
+  --red: #f04747;
 }
 
 html,

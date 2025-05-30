@@ -47,7 +47,7 @@ const STAGE_TO_DESCRIPTION = {
   [TrialStage.APPLIED_GRAVITY]: "Applied gravity",
   [TrialStage.LETTERS_STILL_AFTER_GRAVITY]: "All letters still",
   [TrialStage.STABLE_AFTER_GRAVITY]: "3 seconds elapsed",
-  [TrialStage.APPLIED_EARTHQUAKE]: "Applied earthquake",
+  [TrialStage.APPLIED_EARTHQUAKE]: "Shake",
   [TrialStage.LETTERS_STILL_AFTER_EARTHQUAKE]: "All letters still",
   [TrialStage.STABLE_AFTER_EARTHQUAKE]: "3 seconds elapsed",
 };
@@ -162,7 +162,7 @@ export default function Game(props: GameProps) {
   };
 
   const toggleLetter = (letterEnum: LETTERS) => {
-    if (!worldRef.current) {
+    if (!worldRef.current || isTrialMode) {
       return;
     }
     if (Object.values(lettersInUse).includes(letterEnum)) {
@@ -222,7 +222,7 @@ export default function Game(props: GameProps) {
   useEffect(() => {
     addEventListener("keydown", handleKeypress);
     return () => removeEventListener("keydown", handleKeypress);
-  }, [worldRef.current, lettersInUse]);
+  }, [worldRef.current, lettersInUse, isTrialMode]);
 
   // Create canvas and listen for canvas size updates
   useEffect(() => {
@@ -372,6 +372,7 @@ export default function Game(props: GameProps) {
                   used={Object.values(lettersInUse).includes(letter)}
                   onClick={() => toggleLetter(letter)}
                   key={letter}
+                  disabled={isTrialMode}
                 />
               ))}
             </div>
@@ -484,7 +485,6 @@ export default function Game(props: GameProps) {
               isTrialMode={isTrialMode}
               highestPoint={highestPointRef}
               onAfterStep={afterStep}
-              canGrab={canGrab}
               setCanGrab={setCanGrab}
             />
           )}

@@ -75,7 +75,8 @@ export const startInteraction = (
   setIsRotating: ((b: boolean) => void) | undefined,
   setIsDragging: ((b: boolean) => void) | undefined,
   setIsPanning: ((b: boolean) => void) | undefined,
-  lastPanPointRef: RefObject<[number, number] | null>
+  lastPanPointRef: RefObject<[number, number] | null>,
+  readOnly?: boolean
 ) => {
   // If readOnly, do nothing
   if (!worldRef.current || !mouseBodyRef.current) {
@@ -83,6 +84,7 @@ export const startInteraction = (
   }
   // First check if we're near the rotation handle
   if (
+    !readOnly &&
     selectedBodyRef.current &&
     isNearRotationHandle(worldPoint, panOffset, selectedBodyRef)
   ) {
@@ -92,7 +94,7 @@ export const startInteraction = (
   }
   // Otherwise check for body selection/dragging
   const hitBody = getBodyAtPoint(worldRef, worldPoint, panOffset);
-  if (hitBody && isLetter(hitBody)) {
+  if (!readOnly && hitBody && isLetter(hitBody)) {
     selectedBodyRef.current = hitBody;
     setIsDragging?.(true);
     // Position the mouse body at the click point
@@ -127,9 +129,9 @@ export const updateInteraction = (
   isPanning: boolean | undefined,
   lastPanPointRef: RefObject<[number, number] | null>,
   pixelsPerMeter: number,
-  canGrab: boolean,
   setCanGrab: (b: boolean) => void,
-  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void
+  onPanChange?: (fn: (offset: [number, number]) => [number, number]) => void,
+  readOnly?: boolean
 ) => {
   if (isRotating && selectedBodyRef.current) {
     // We're in rotation mode
@@ -161,13 +163,15 @@ export const updateInteraction = (
 
     lastPanPointRef.current = [mouseEvent.clientX, mouseEvent.clientY];
   }
-  const hitBody = getBodyAtPoint(worldRef, worldPoint, panOffset);
-  const nearRotationHandle = isNearRotationHandle(
-    worldPoint,
-    panOffset,
-    selectedBodyRef
-  );
-  setCanGrab(Boolean(hitBody) || nearRotationHandle);
+  if (!readOnly) {
+    const hitBody = getBodyAtPoint(worldRef, worldPoint, panOffset);
+    const nearRotationHandle = isNearRotationHandle(
+      worldPoint,
+      panOffset,
+      selectedBodyRef
+    );
+    setCanGrab(Boolean(hitBody) || nearRotationHandle);
+  }
 };
 
 // End dragging or rotation

@@ -31,7 +31,6 @@ interface CanvasProps {
   setIsRotating?: (b: boolean) => void;
   setIsPanning?: (b: boolean) => void;
   isTrialMode?: boolean;
-  canGrab: boolean;
   setCanGrab: (b: boolean) => void;
 }
 
@@ -60,7 +59,6 @@ export default function Canvas(props: CanvasProps) {
     worldPoint: [number, number],
     e: MouseEvent | Touch
   ) => {
-    if (props.isTrialMode) return; // Disable interaction in trial mode
     startInteraction(
       worldPoint,
       props.panOffset,
@@ -72,7 +70,8 @@ export default function Canvas(props: CanvasProps) {
       props.setIsRotating,
       props.setIsDragging,
       props.setIsPanning,
-      lastPanPointRef
+      lastPanPointRef,
+      props.isTrialMode
     );
   };
 
@@ -80,7 +79,6 @@ export default function Canvas(props: CanvasProps) {
     worldPoint: [number, number],
     e: MouseEvent | Touch
   ) => {
-    if (props.isTrialMode) return; // Disable interaction in trial mode
     updateInteraction(
       props.worldRef,
       worldPoint,
@@ -93,14 +91,13 @@ export default function Canvas(props: CanvasProps) {
       props.isPanning,
       lastPanPointRef,
       props.pixelsPerMeter,
-      props.canGrab,
       props.setCanGrab,
-      props.onPanChange
+      props.onPanChange,
+      props.isTrialMode
     );
   };
 
   const _endInteraction = () => {
-    if (props.isTrialMode) return; // Disable interaction in trial mode
     endInteraction(
       props.worldRef,
       mouseConstraintRef,

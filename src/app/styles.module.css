@@ -77,6 +77,10 @@
   color: var(--background);
 }
 
+.letterButton.disabled {
+  cursor: not-allowed;
+}
+
 .actionButtonContainer {
   display: flex;
   flex-direction: column;
@@ -203,7 +207,7 @@
 
 .arrowContainer {
   flex-shrink: 1;
-  padding-right: 1vw;
+  padding-right: 0.5vw;
   transition-property: padding-right;
   transition-duration: 0.25s;
 }

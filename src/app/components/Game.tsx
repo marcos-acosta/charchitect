@@ -10,10 +10,13 @@ import {
   TrialStage,
 } from "../logic/interfaces";
 import LetterButton from "./LetterButton";
-import { computePixelsPerMeter } from "../logic/render-util";
+import {
+  computeDimensionsInMeters,
+  computePixelsPerMeter,
+} from "../logic/render-util";
 import {
   ANGULAR_SPEED_THRESHOLD,
-  CANVAS_WIDTH_METERS,
+  CANVAS_HEIGHT_METERS,
   LINEAR_SPEED_THRESHOLD,
   MIN_SECONDS_STABLE,
 } from "../logic/game-config";
@@ -82,8 +85,8 @@ export default function Game(props: GameProps) {
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
-        canvasContainerDimensions.width,
-        CANVAS_WIDTH_METERS
+        canvasContainerDimensions.height,
+        CANVAS_HEIGHT_METERS
       )
     : undefined;
 
@@ -95,13 +98,19 @@ export default function Game(props: GameProps) {
 
     const { width, height } =
       canvasContainerRef.current.getBoundingClientRect();
+    const widthFloored = Math.floor(width);
+    const heightFloored = Math.floor(height);
     setCanvasContainerDimensions({
-      width: Math.floor(width),
-      height: Math.floor(height),
+      width: widthFloored,
+      height: heightFloored,
+    });
+    const dimensionsInMeters = computeDimensionsInMeters({
+      width: widthFloored,
+      height: heightFloored,
     });
 
-    if (worldRef.current === null) {
-      const [world, groundBody] = createWorld(false);
+    if (worldRef.current === null && dimensionsInMeters) {
+      const [world, groundBody] = createWorld(false, dimensionsInMeters);
       worldRef.current = world;
       groundRef.current = groundBody;
     }
@@ -288,109 +297,45 @@ export default function Game(props: GameProps) {
     !isSubmitting && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE;
 
   return (
-    <div className={styles.pageOuterContainer}>
-      <div className={styles.coreGameContainer}>
-        <div className={styles.letterSelectorAndCanvasesContainer}>
-          <div className={styles.letterSelectionContainer}>
-            {Object.values(LETTERS).map((letter) => (
-              <LetterButton
-                letter={letter}
-                used={Object.values(lettersInUse).includes(letter)}
-                onClick={() => toggleLetter(letter)}
-                key={letter}
-              />
-            ))}
-          </div>
-          <div className={styles.canvasesAndControls}>
-            <div className={styles.controlsContainer}>
-              <button
-                onClick={toggleTrialMode}
-                className={styles.controlsButton}
-              >
-                <div className={styles.buttonText}>
-                  {isTrialMode ? "EXIT TRIAL" : "RUN TRIAL"}
-                </div>
-                <div className={styles.shortcut}>[enter]</div>
-              </button>
-              <button
-                onClick={submitScoreCallback}
-                className={styles.controlsButton}
-                disabled={!canSubmitScore}
-              >
-                <div className={styles.buttonText}>
-                  {isSubmitting ? "SUBMITTING..." : "SUBMIT"}
-                </div>
-              </button>
-              <button
-                onClick={() => setPanOffset([0, 0])}
-                className={styles.controlsButton}
-              >
-                <div className={styles.buttonText}>RESET VIEW</div>
-              </button>
-              <div className={styles.statusDivider}>
-                <hr />
-              </div>
-              <div className={styles.statusContainer}>
-                <div className={styles.trialStageContainer}>{trialStage}</div>
-                {/* <div className={styles.objectsMovingContainer}>
-                  {allLettersStillState
-                    ? "All letters still"
-                    : "Some letters still moving"}
-                </div>
-                <div className={styles.fullyStableContainer}>
-                  {stabilized ? "Fully stabilized" : "Not yet stabilized"}
-                </div>
-                <div className={styles.stabilityTestStatusContainer}>
-                  {stabilityTestStarted
-                    ? "Stability test started"
-                    : "Stability test not started"}
-                </div> */}
-              </div>
-              <button onClick={() => props.setPage(Pages.HOMEPAGE)}>
-                Back to Homepage
-              </button>
-            </div>
-            <div
-              className={combineClasses(
-                styles.canvasContainer,
-                isDragging
-                  ? styles.dragging
-                  : isRotating
-                  ? styles.rotating
-                  : isPanning
-                  ? styles.panning
-                  : canGrab
-                  ? styles.canGrab
-                  : styles.move
-              )}
-              ref={canvasContainerRef}
-            >
-              {worldRef.current &&
-                canvasContainerDimensions &&
-                pixelsPerMeter && (
-                  <Canvas
-                    worldRef={worldRef as RefObject<p2.World>}
-                    width={canvasContainerDimensions?.width}
-                    height={canvasContainerDimensions?.height}
-                    pixelsPerMeter={pixelsPerMeter}
-                    panOffset={panOffset}
-                    onPanChange={setPanOffset}
-                    lettersInUse={lettersInUse}
-                    isDragging={isDragging}
-                    isRotating={isRotating}
-                    isPanning={isPanning}
-                    setIsDragging={setIsDragging}
-                    setIsRotating={setIsRotating}
-                    setIsPanning={setIsPanning}
-                    isTrialMode={isTrialMode}
-                    highestPoint={highestPointRef}
-                    onAfterStep={afterStep}
-                    canGrab={canGrab}
-                    setCanGrab={setCanGrab}
-                  />
-                )}
-            </div>
-          </div>
+    <>
+      <div className={styles.pageOuterContainer}>
+        <div
+          className={combineClasses(
+            styles.canvasContainer,
+            isDragging
+              ? styles.dragging
+              : isRotating
+              ? styles.rotating
+              : isPanning
+              ? styles.panning
+              : canGrab
+              ? styles.canGrab
+              : styles.move
+          )}
+          ref={canvasContainerRef}
+        >
+          {worldRef.current && canvasContainerDimensions && pixelsPerMeter && (
+            <Canvas
+              worldRef={worldRef as RefObject<p2.World>}
+              width={canvasContainerDimensions?.width}
+              height={canvasContainerDimensions?.height}
+              pixelsPerMeter={pixelsPerMeter}
+              panOffset={panOffset}
+              onPanChange={setPanOffset}
+              lettersInUse={lettersInUse}
+              isDragging={isDragging}
+              isRotating={isRotating}
+              isPanning={isPanning}
+              setIsDragging={setIsDragging}
+              setIsRotating={setIsRotating}
+              setIsPanning={setIsPanning}
+              isTrialMode={isTrialMode}
+              highestPoint={highestPointRef}
+              onAfterStep={afterStep}
+              canGrab={canGrab}
+              setCanGrab={setCanGrab}
+            />
+          )}
         </div>
       </div>
       {showNamePopup && (
@@ -412,6 +357,6 @@ export default function Game(props: GameProps) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

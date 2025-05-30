@@ -1,14 +1,14 @@
 import * as p2 from "p2-es";
 import {
-  CANVAS_WIDTH_METERS,
+  CANVAS_HEIGHT_METERS,
   DESIRED_LETTER_WIDTH_METERS,
   GROUND_HEIGHT_METERS,
   GROUND_MASS,
   GROUND_THICKNESS_METERS,
+  GROUND_WIDTH_METERS,
   PUSH_VELOCITY,
   SANDBOX_DAMPING,
   SPRING_DAMPING,
-  SPRING_HOOK_WIDTH_METERS,
   SPRING_STIFFNESS,
   TRIAL_DAMPING,
   WOOD_MATERIAL_FRICTION,
@@ -24,25 +24,27 @@ import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
 import { RefObject } from "react";
 
-export const createWorld = (gravity: boolean): [p2.World, p2.Body] => {
+export const createWorld = (
+  gravity: boolean,
+  dimensionsInMeters: IDimensions
+): [p2.World, p2.Body] => {
   // Create new physics world with gravity
   const newWorld = new p2.World({
     gravity: gravity ? [0, -9.81] : [0, 0],
   });
 
-  const GROUND_WIDTH = CANVAS_WIDTH_METERS * 0.9;
-  const REMAINING_WIDTH = CANVAS_WIDTH_METERS - GROUND_WIDTH;
+  const groundEnd = dimensionsInMeters.width * 0.9;
+  const groundCenter = groundEnd - GROUND_WIDTH_METERS / 2;
   // Add a ground plane
   const groundBody = new p2.Body({
     type: p2.Body.DYNAMIC,
     mass: GROUND_MASS,
-    position: [CANVAS_WIDTH_METERS / 2, GROUND_HEIGHT_METERS],
-    // fixedX: true,
+    position: [groundCenter, GROUND_HEIGHT_METERS],
     fixedY: true,
     fixedRotation: true,
   });
   const groundShape = new p2.Box({
-    width: GROUND_WIDTH,
+    width: GROUND_WIDTH_METERS,
     height: GROUND_THICKNESS_METERS,
   });
   groundBody.addShape(groundShape);
@@ -50,24 +52,16 @@ export const createWorld = (gravity: boolean): [p2.World, p2.Body] => {
   // Add spring hook
   const springHook = new p2.Body({
     type: p2.Body.STATIC,
-    position: [
-      CANVAS_WIDTH_METERS + SPRING_HOOK_WIDTH_METERS / 2,
-      GROUND_HEIGHT_METERS,
-    ],
+    position: [dimensionsInMeters.width, GROUND_HEIGHT_METERS],
   });
-  const springShape = new p2.Box({
-    width: SPRING_HOOK_WIDTH_METERS,
-    height: SPRING_HOOK_WIDTH_METERS,
-  });
-  springHook.addShape(springShape);
   newWorld.addBody(springHook);
   // Add spring
   const spring = new p2.LinearSpring(groundBody, springHook, {
     stiffness: SPRING_STIFFNESS,
     damping: SPRING_DAMPING,
-    localAnchorA: [GROUND_WIDTH / 2, 0],
-    localAnchorB: [-SPRING_HOOK_WIDTH_METERS / 2, 0],
-    restLength: REMAINING_WIDTH / 2,
+    localAnchorA: [GROUND_WIDTH_METERS / 2, 0],
+    localAnchorB: [0, 0],
+    restLength: dimensionsInMeters.width - groundEnd,
   });
   newWorld.addSpring(spring);
 
@@ -161,8 +155,8 @@ export const addLetterToWorld = (
   angle?: number
 ): number => {
   const metersPerPixel = computeMetersPerPixel(
-    dimensions.width,
-    CANVAS_WIDTH_METERS
+    dimensions.height,
+    CANVAS_HEIGHT_METERS
   );
   const canvasHeightMeters = dimensions.height * metersPerPixel;
   const average_letter_width_meters = AVG_LETTER_WIDTH_PIXELS * metersPerPixel;

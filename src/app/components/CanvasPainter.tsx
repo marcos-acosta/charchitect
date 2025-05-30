@@ -43,11 +43,6 @@ export const paintCanvas = (props: CanvasPainterProps) => {
   // Apply pan offset
   ctx.translate(panOffset[0], panOffset[1]);
 
-  // Draw highest point if provided
-  if (highestPoint !== undefined && highestPoint !== null) {
-    drawHighestPoint(ctx, highestPoint, width / pixelsPerMeter);
-  }
-
   // Draw all bodies
   for (const body of world.bodies) {
     // Skip mouse body
@@ -55,8 +50,8 @@ export const paintCanvas = (props: CanvasPainterProps) => {
 
     // Set color based on state
     if (isShadowLetter(body)) {
-      ctx.fillStyle = "rgba(128, 128, 128, 0.5)";
-      ctx.strokeStyle = "rgba(128, 128, 128, 0.5)";
+      ctx.fillStyle = COLORS.shadow;
+      ctx.strokeStyle = COLORS.shadow;
     } else if (body === selectedBody) {
       ctx.fillStyle = COLORS.selected;
       ctx.strokeStyle = COLORS.selected;
@@ -92,5 +87,10 @@ export const paintCanvas = (props: CanvasPainterProps) => {
       const handleY = bodyY + Math.sin(body.angle) * ROTATION_HANDLE_DISTANCE;
       drawRotationHandle(ctx, bodyX, bodyY, handleX, handleY);
     }
+  }
+
+  // Draw highest point if provided
+  if (highestPoint !== undefined && highestPoint !== null) {
+    drawHighestPoint(ctx, highestPoint, width / pixelsPerMeter);
   }
 };

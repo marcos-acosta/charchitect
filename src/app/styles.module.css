@@ -5,117 +5,16 @@
   align-items: center;
   justify-content: center;
   font-family: "Times New Roman", Times, serif;
-}
-
-.coreGameContainer {
-  width: 95%;
-  height: 95%;
-  /* background-color: bisque; */
-}
-
-.letterSelectorAndCanvasesContainer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.canvasesAndControls {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  flex-grow: 1;
-  gap: 10px;
-}
-
-.canvas {
-  display: block;
-  background: var(--background);
-  border: 1px solid black;
-}
-
-.controlsContainer {
-  padding-right: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .canvasContainer {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.controlsButton {
-  display: flex;
-  flex-direction: column;
   width: 100%;
-  border: 1px solid var(--foreground);
-  background-color: var(--background);
-  box-shadow: -2px 2px 0px var(--foreground);
-  gap: 2px;
-  color: var(--foreground);
-  font-size: 18px;
-  padding: 10px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.controlsButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.buttonText {
-  font-style: italic;
-}
-
-.shortcut {
-  font-family: monospace;
-  font-size: 0.9rem;
-}
-
-.letterSelectionContainer {
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.letterButtonContainer {
-  flex-grow: 1;
-}
-
-.letterButton {
-  width: 100%;
-  background-color: var(--background);
-  color: var(--foreground);
-  border: 1px solid var(--foreground);
-  font-size: 18px;
-  padding: 5px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: -2px 2px 0px var(--foreground);
-  font-family: inherit;
-}
-
-.letterButton.usedLetterButton {
-  background-color: var(--foreground);
-  color: var(--background);
-}
-
-.statusDivider {
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-.statusDivider hr {
-  border: none;
-  border-top: 1px dashed var(--foreground);
-  height: 1px;
+  height: 100%;
 }
 
 .submissionDialogContainer {

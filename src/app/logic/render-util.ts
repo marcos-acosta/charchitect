@@ -1,5 +1,7 @@
 import { RefObject } from "react";
 import * as p2 from "p2-es";
+import { IDimensions } from "./interfaces";
+import { CANVAS_HEIGHT_METERS } from "./game-config";
 
 // Colors for different body types
 export const COLORS = {
@@ -12,6 +14,7 @@ export const COLORS = {
   circleOutline: "rgba(150, 150, 150, 0.5)",
   handleOutline: "#fff",
   background: "#fff",
+  shadow: "rgb(200, 200, 200)",
 };
 
 // Constants for rotation handle
@@ -28,6 +31,17 @@ export const computePixelsPerMeter = (pixels: number, meters: number) =>
 
 export const computeMetersPerPixel = (pixels: number, meters: number) =>
   meters / pixels;
+
+export const computeDimensionsInMeters = (pixelDimensions: IDimensions) => {
+  const metersPerPixel = computeMetersPerPixel(
+    pixelDimensions.height,
+    CANVAS_HEIGHT_METERS
+  );
+  return {
+    width: pixelDimensions.width * metersPerPixel,
+    height: pixelDimensions.height * metersPerPixel,
+  };
+};
 
 // Convert page coordinates to physics world coordinates
 export const getPhysicsCoord = (

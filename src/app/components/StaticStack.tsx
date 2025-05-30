@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from "react";
-import styles from "./../styles.module.css";
 import * as p2 from "p2-es";
 import { paintCanvas } from "./CanvasPainter";
 import { LETTERS, ILetterData } from "../logic/interfaces";
@@ -32,8 +31,7 @@ export default function StaticStack(props: StaticStackProps) {
         worldRef.current,
         { width: props.width, height: props.height },
         [letterData.x, letterData.y],
-        letterData.angle,
-        true
+        letterData.angle
       );
     });
 

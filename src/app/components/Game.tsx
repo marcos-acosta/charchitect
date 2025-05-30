@@ -24,6 +24,7 @@ import {
   addLetterToWorld,
   allLettersStill,
   createWorld,
+  findHighestBody,
   removeLetterFromWorld,
   startShakeTest,
   startSimulation,
@@ -120,12 +121,17 @@ export default function Game(props: GameProps) {
     if (!worldRef.current || !canvasContainerDimensions) {
       return;
     }
+    const [tallestLetter, tallestPoint] = findHighestBody(
+      worldRef.current,
+      true
+    );
     const letterId = addLetterToWorld(
       letterPolygons,
       worldRef.current,
       canvasContainerDimensions,
       undefined, // position
-      undefined // angle
+      undefined, // angle
+      tallestLetter ? [tallestLetter.position[0], tallestPoint] : undefined
     );
     setLettersInUse((prev) => ({ ...prev, [letterId]: letterEnum }));
   };
@@ -299,6 +305,9 @@ export default function Game(props: GameProps) {
   return (
     <>
       <div className={styles.pageOuterContainer}>
+        <div className={styles.commandSidebar}>
+          <button onClick={toggleTrialMode}>toggle</button>
+        </div>
         <div
           className={combineClasses(
             styles.canvasContainer,

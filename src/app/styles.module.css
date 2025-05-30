@@ -7,6 +7,7 @@
   font-family: "Times New Roman", Times, serif;
   overflow-x: hidden;
   overflow-y: hidden;
+  position: relative;
 }
 
 .canvasContainer {
@@ -15,6 +16,12 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+}
+
+.commandSidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .submissionDialogContainer {

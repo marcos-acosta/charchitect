@@ -19,10 +19,15 @@ import {
   velocityToSpeed,
   WOOD_MATERIAL,
 } from "./p2-util";
-import { IDimensions, IPolygons, LETTERS } from "./interfaces";
+import { IDimensions, IPoint, IPolygons, LETTERS } from "./interfaces";
 import { computeMetersPerPixel } from "./render-util";
 import { AVG_LETTER_WIDTH_PIXELS } from "./letter-util";
 import { RefObject } from "react";
+
+const getGroundCenter = (dimensionsInMeters: IDimensions) => {
+  const groundEnd = dimensionsInMeters.width * 0.9;
+  return groundEnd - GROUND_WIDTH_METERS / 2;
+};
 
 export const createWorld = (
   gravity: boolean,
@@ -33,8 +38,8 @@ export const createWorld = (
     gravity: gravity ? [0, -9.81] : [0, 0],
   });
 
-  const groundEnd = dimensionsInMeters.width * 0.9;
-  const groundCenter = groundEnd - GROUND_WIDTH_METERS / 2;
+  const groundCenter = getGroundCenter(dimensionsInMeters);
+  const groundEnd = groundCenter + GROUND_WIDTH_METERS / 2;
   // Add a ground plane
   const groundBody = new p2.Body({
     type: p2.Body.DYNAMIC,
@@ -152,20 +157,29 @@ export const addLetterToWorld = (
   world: p2.World,
   dimensions: IDimensions,
   position?: [number, number],
-  angle?: number
+  angle?: number,
+  tallestPoint?: IPoint
 ): number => {
   const metersPerPixel = computeMetersPerPixel(
     dimensions.height,
     CANVAS_HEIGHT_METERS
   );
-  const canvasHeightMeters = dimensions.height * metersPerPixel;
   const average_letter_width_meters = AVG_LETTER_WIDTH_PIXELS * metersPerPixel;
   const scalingRatio =
     (DESIRED_LETTER_WIDTH_METERS / average_letter_width_meters) *
     metersPerPixel;
+  const groundCenter = getGroundCenter({
+    width: dimensions.width * metersPerPixel,
+    height: dimensions.height * metersPerPixel,
+  });
+  const positionToSet: IPoint = position
+    ? [position[0], position[1]]
+    : tallestPoint
+    ? [tallestPoint[0], tallestPoint[1] + 0.1]
+    : [groundCenter, GROUND_HEIGHT_METERS + GROUND_THICKNESS_METERS / 2];
   return createLetterFromPoints(
     letterPolygons,
-    position ? [position[0], position[1]] : [0.5, canvasHeightMeters / 2],
+    positionToSet,
     world,
     WOOD_MATERIAL,
     true,
@@ -177,7 +191,6 @@ export const addLetterToWorld = (
 };
 
 export const isManipulableLetter = (body: p2.Body) => {
-  // console.log(body.id, isLetter(body), body.damping, body.type);
   return (
     isLetter(body) &&
     body.damping === SANDBOX_DAMPING &&
@@ -300,6 +313,29 @@ export const removeLetterFromWorld = (
   world.removeBody(letterBody);
 };
 
+export const findHighestBody = (
+  world: p2.World,
+  isSandbox?: boolean
+): [p2.Body | null, number] => {
+  let highestPoint = 0;
+  let highestBody: p2.Body | null = null;
+  const bodiesOfInterest = world.bodies.filter((body) =>
+    (isSandbox ? isManipulableLetter : isTrialLetter)(body)
+  );
+  bodiesOfInterest.forEach((body) => {
+    // Find the highest point of this body
+    if (body.aabbNeedsUpdate) {
+      body.updateAABB();
+    }
+    const bodyHeight = body.aabb.upperBound[1];
+    if (bodyHeight > highestPoint) {
+      highestPoint = bodyHeight;
+      highestBody = body;
+    }
+  });
+  return [highestBody, highestPoint];
+};
+
 export const updateHighestPoint = (
   trialWorld: p2.World | null,
   highestPointRef: RefObject<number | null>
@@ -307,21 +343,10 @@ export const updateHighestPoint = (
   if (!trialWorld) {
     return;
   }
-  const bodiesOfInterest = trialWorld.bodies.filter((body) =>
-    isTrialLetter(body)
-  );
-  if (bodiesOfInterest.length === 0) {
+  const [highestBody, highestPoint] = findHighestBody(trialWorld);
+  if (!highestBody) {
     return;
   }
-  let highestPoint = 0;
-  bodiesOfInterest.forEach((body) => {
-    // Find the highest point of this body
-    body.updateAABB();
-    const bodyHeight = body.aabb.upperBound[1];
-    if (bodyHeight > highestPoint) {
-      highestPoint = bodyHeight;
-    }
-  });
   highestPointRef.current = highestPoint;
 };
 

@@ -17,8 +17,10 @@ import {
 import {
   ANGULAR_SPEED_THRESHOLD,
   CANVAS_HEIGHT_METERS,
+  GRACE_PERIOD_SECONDS,
   LINEAR_SPEED_THRESHOLD,
   MIN_SECONDS_STABLE,
+  SHAKE_DELAY_MS,
 } from "../logic/game-config";
 import {
   addLetterToWorld,
@@ -54,35 +56,21 @@ const STAGE_TO_DESCRIPTION = {
 
 export default function Game(props: GameProps) {
   /** REFS */
-  // Create single world reference
   const worldRef = useRef<p2.World | null>(null);
-  // Track the highest point
   const highestPointRef = useRef<number | null>(null);
-  // Canvas container dimensions
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  // Whether all letters are currently still
   const allLettersStillRef = useRef<boolean>(false);
-  // Timeout to detect stability
   const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Ref to track the ground
   const groundRef = useRef<p2.Body>(null);
-  // Track current trial stage
   const trialStageRef = useRef<TrialStage>(TrialStage.NOT_STARTED);
   /** STATES */
-  // The current canvas container dimensions
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
-  // The letters currently in use
   const [lettersInUse, setLettersInUse] = useState<Record<number, LETTERS>>({});
-  // Add panning state
   const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
-  // Whether the score is being submitted
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Whether to show the name input popup
   const [showNamePopup, setShowNamePopup] = useState(false);
-  // Whether the user is hovering over something grabbable
   const [canGrab, setCanGrab] = useState(false);
-  // The player's name
   const [playerName, setPlayerName] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("playerName") || "";
@@ -92,10 +80,10 @@ export default function Game(props: GameProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
-  // Whether we're in trial mode
   const [isTrialMode, setIsTrialMode] = useState(false);
-  // The current trial stage
   const [trialStage, setTrialStage] = useState(TrialStage.NOT_STARTED);
+  const lastGravityTimeRef = useRef<number | null>(null);
+  const lastShakeTimeRef = useRef<number | null>(null);
 
   const pixelsPerMeter = canvasContainerDimensions
     ? computePixelsPerMeter(
@@ -185,8 +173,7 @@ export default function Game(props: GameProps) {
 
   const verifySolidAfterNSeconds = () => {
     if (trialStageRef.current === TrialStage.LETTERS_STILL_AFTER_GRAVITY) {
-      setTrialStage(TrialStage.APPLIED_EARTHQUAKE);
-      setTimeout(runShakeTestCallback, 10);
+      setTrialStage(TrialStage.STABLE_AFTER_GRAVITY);
     } else if (
       trialStageRef.current === TrialStage.LETTERS_STILL_AFTER_EARTHQUAKE
     ) {
@@ -207,6 +194,7 @@ export default function Game(props: GameProps) {
       // Switching to trial mode
       startSimulation(worldRef.current as p2.World);
       setTrialStage(TrialStage.APPLIED_GRAVITY);
+      lastGravityTimeRef.current = Date.now();
     } else {
       // Switching back to sandbox mode
       stopSimulation(worldRef.current as p2.World);
@@ -239,13 +227,37 @@ export default function Game(props: GameProps) {
   // Update ref when state changes
   useEffect(() => {
     trialStageRef.current = trialStage;
+    if (trialStageRef.current === TrialStage.STABLE_AFTER_GRAVITY) {
+      setTrialStage(TrialStage.APPLIED_EARTHQUAKE);
+      lastShakeTimeRef.current = Date.now();
+      setTimeout(runShakeTestCallback, SHAKE_DELAY_MS);
+    }
   }, [trialStage]);
 
   const updateTrialStageWithAllLettersStill = () => {
-    if (trialStageRef.current === TrialStage.APPLIED_GRAVITY) {
+    let updatedOne = false;
+    // console.log(lastShakeTimeRef.current);
+    if (
+      trialStageRef.current === TrialStage.APPLIED_GRAVITY &&
+      lastGravityTimeRef.current &&
+      Date.now() > lastGravityTimeRef.current + 1000 * GRACE_PERIOD_SECONDS
+    ) {
       setTrialStage(TrialStage.LETTERS_STILL_AFTER_GRAVITY);
-    } else if (trialStageRef.current === TrialStage.APPLIED_EARTHQUAKE) {
+      updatedOne = true;
+    } else if (
+      trialStageRef.current === TrialStage.APPLIED_EARTHQUAKE &&
+      lastShakeTimeRef.current &&
+      Date.now() > lastShakeTimeRef.current + 1000 * GRACE_PERIOD_SECONDS
+    ) {
       setTrialStage(TrialStage.LETTERS_STILL_AFTER_EARTHQUAKE);
+      updatedOne = true;
+    }
+    if (updatedOne) {
+      const timeout: NodeJS.Timeout = setTimeout(
+        verifySolidAfterNSeconds,
+        MIN_SECONDS_STABLE * 1000
+      );
+      stabilityTimeoutRef.current = timeout;
     }
   };
 
@@ -256,21 +268,14 @@ export default function Game(props: GameProps) {
         LINEAR_SPEED_THRESHOLD,
         ANGULAR_SPEED_THRESHOLD
       );
-      if (allLettersStillResult != allLettersStillRef.current) {
-        if (allLettersStillResult) {
-          updateTrialStageWithAllLettersStill();
-          const timeout: NodeJS.Timeout = setTimeout(
-            verifySolidAfterNSeconds,
-            MIN_SECONDS_STABLE * 1000
-          );
-          stabilityTimeoutRef.current = timeout;
-        } else {
-          if (stabilityTimeoutRef.current) {
-            clearTimeout(stabilityTimeoutRef.current);
-          }
-          stabilityTimeoutRef.current = null;
-          unVerifySolidAfterNSeconds();
+      if (allLettersStillResult) {
+        updateTrialStageWithAllLettersStill();
+      } else if (!allLettersStillResult && allLettersStillRef.current) {
+        if (stabilityTimeoutRef.current) {
+          clearTimeout(stabilityTimeoutRef.current);
         }
+        stabilityTimeoutRef.current = null;
+        unVerifySolidAfterNSeconds();
       }
       allLettersStillRef.current = allLettersStillResult;
     }
@@ -284,9 +289,11 @@ export default function Game(props: GameProps) {
   const runShakeTestCallback = () => {
     if (groundRef.current) {
       startShakeTest(groundRef.current);
+      lastGravityTimeRef.current = Date.now();
     }
   };
 
+  /* BUTTON CALLBACKS */
   const submitScoreCallback = () => {
     if (worldRef.current) {
       setShowNamePopup(true);
@@ -320,15 +327,12 @@ export default function Game(props: GameProps) {
 
   const resetView = () => setPanOffset([0, 0]);
 
-  /** BUTTON STATES */
+  /* BUTTON STATES */
   const canSubmitScore =
     !isSubmitting && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE;
-
   const isViewAtOrigin = panOffset[0] === 0 && panOffset[1] === 0;
-
   const worldHasManipulableLetters =
     worldRef.current && hasManipulableLetters(worldRef.current);
-
   const canRunTrial = isTrialMode || worldHasManipulableLetters;
 
   return (

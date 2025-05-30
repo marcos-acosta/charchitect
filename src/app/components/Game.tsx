@@ -306,6 +306,17 @@ export default function Game(props: GameProps) {
     <>
       <div className={styles.pageOuterContainer}>
         <div className={styles.commandSidebar}>
+          <div className={styles.titleContainer}>Typesetter</div>
+          <div className={styles.letterGrid}>
+            {Object.values(LETTERS).map((letter) => (
+              <LetterButton
+                letter={letter}
+                used={Object.values(lettersInUse).includes(letter)}
+                onClick={() => toggleLetter(letter)}
+                key={letter}
+              />
+            ))}
+          </div>
           <button onClick={toggleTrialMode}>toggle</button>
         </div>
         <div

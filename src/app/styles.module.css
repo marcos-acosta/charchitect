@@ -22,6 +22,12 @@
   position: absolute;
   top: 0;
   left: 0;
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  height: 100%;
+  padding-top: 20px;
+  pointer-events: none;
 }
 
 .submissionDialogContainer {
@@ -59,4 +65,49 @@
 
 .canGrab canvas {
   cursor: grab;
+}
+
+.titleContainer {
+  font-family: var(--font-noto-serif), serif;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  text-transform: uppercase;
+  font-size: 60px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.letterGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  padding-left: 35px;
+  padding-right: 35px;
+  row-gap: 5px;
+}
+
+.letterButtonContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.letterButton {
+  background-color: unset;
+  border: none;
+  font-family: var(--font-b12-mono);
+  font-size: 35px;
+  padding: 10px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  cursor: pointer;
+}
+
+.letterButton.usedLetterButton {
+  background-color: var(--foreground);
+  color: var(--background);
 }

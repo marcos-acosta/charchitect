@@ -372,7 +372,11 @@ export default function Game(props: GameProps) {
                 )}
               >
                 <ActionButton
-                  text={"Reset view"}
+                  text={"View leaderboard"}
+                  callback={() => props.setPage(Pages.HOMEPAGE)}
+                />
+                <ActionButton
+                  text={"Re-center"}
                   callback={resetView}
                   disabled={isViewAtOrigin}
                 />
@@ -483,21 +487,6 @@ export default function Game(props: GameProps) {
         </div>
       </div>
       <div className={styles.cornerControls}>
-        <div
-          className={combineClasses(styles.returnHomeButton)}
-          role="button"
-          onClick={() => props.setPage(Pages.HOMEPAGE)}
-        >
-          <span
-            className={combineClasses(
-              "material-symbols-outlined",
-              styles.homeIcon
-            )}
-          >
-            home
-          </span>
-          <span>Go home</span>
-        </div>
         <div
           className={combineClasses(
             styles.runTypeContainer,

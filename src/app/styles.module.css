@@ -1,7 +1,6 @@
 .pageOuterContainer {
   width: 100vw;
   height: 100vh;
-  font-family: "Times New Roman", Times, serif;
   overflow-x: hidden;
   overflow-y: hidden;
   position: relative;
@@ -290,4 +289,49 @@
 
 .marginBottomMedium {
   margin-bottom: 20px;
+}
+
+.fullPageContainer {
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  position: relative;
+  display: grid;
+  grid-template-columns: 30vw auto;
+}
+
+.description {
+  font-size: 1.5vw;
+}
+
+.sidePanel {
+  padding-top: 20px;
+}
+
+.sideBarInnerContainer {
+  padding-left: 2.8vw;
+  padding-right: 2.8vw;
+}
+
+.leaderboardContainer {
+  width: 100%;
+}
+
+.leaderboardTable {
+  display: grid;
+  grid-template-columns: 2fr 3fr 3fr;
+  font-size: 1.5vw;
+}
+
+.leaderboardCell {
+  font-family: var(--font-b12-mono);
+  font-size: 1.3vw;
+  margin-top: 8px;
+}
+
+.leaderboardHeader {
+  text-transform: uppercase;
+  font-weight: bold;
+  border-bottom: 1px solid var(--foreground);
 }

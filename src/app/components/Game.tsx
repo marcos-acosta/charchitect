@@ -482,21 +482,38 @@ export default function Game(props: GameProps) {
           </div>
         </div>
       </div>
-      <div
-        className={combineClasses(
-          styles.runTypeContainer,
-          isTrialMode && styles.trialMode
-        )}
-      >
-        <span
+      <div className={styles.cornerControls}>
+        <div
+          className={combineClasses(styles.returnHomeButton)}
+          role="button"
+          onClick={() => props.setPage(Pages.HOMEPAGE)}
+        >
+          <span
+            className={combineClasses(
+              "material-symbols-outlined",
+              styles.homeIcon
+            )}
+          >
+            home
+          </span>
+          <span>Go home</span>
+        </div>
+        <div
           className={combineClasses(
-            "material-symbols-outlined",
-            styles.runTypeIcon
+            styles.runTypeContainer,
+            isTrialMode && styles.trialMode
           )}
         >
-          {isTrialMode ? "directions_run" : "construction"}
-        </span>
-        <span>{isTrialMode ? "Testing" : "Building"}</span>
+          <span
+            className={combineClasses(
+              "material-symbols-outlined",
+              styles.runTypeIcon
+            )}
+          >
+            {isTrialMode ? "directions_run" : "construction"}
+          </span>
+          <span>{isTrialMode ? "Testing" : "Building"}</span>
+        </div>
       </div>
       {showNamePopup && (
         <div className={styles.submissionDialogContainer}>

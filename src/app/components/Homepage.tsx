@@ -59,18 +59,33 @@ export default function Homepage(props: HomepageProps) {
             />
           </div>
           <div className={styles.leaderboardContainer}>
-            <div className={styles.leaderboardTable}>
-              <div className={styles.leaderboardHeader}>Rank</div>
-              <div className={styles.leaderboardHeader}>Height</div>
-              <div className={styles.leaderboardHeader}>By</div>
+            <div
+              className={styles.leaderboardTable}
+              onMouseLeave={() => setPreviewedScoreId(null)}
+            >
+              <div
+                className={combineClasses(styles.leaderboardRow, styles.header)}
+              >
+                <div className={styles.leaderboardHeaderCell}>Rank</div>
+                <div className={styles.leaderboardHeaderCell}>Height</div>
+                <div className={styles.leaderboardHeaderCell}>By</div>
+              </div>
               {scores.map((score, i) => (
-                <Fragment key={score._id}>
-                  <div
-                    className={styles.leaderboardCell}
-                    onClick={() => setSelectedScoreId(score._id)}
-                  >
-                    #{i + 1}
-                  </div>
+                <div
+                  className={combineClasses(
+                    styles.leaderboardRow,
+                    ((selectedScoreId && score._id === selectedScoreId) ||
+                      (!selectedScoreId && i === 0)) &&
+                      styles.selected,
+                    previewedScoreId &&
+                      score._id === previewedScoreId &&
+                      styles.previewed
+                  )}
+                  key={score._id}
+                  onClick={() => setSelectedScoreId(score._id)}
+                  onMouseEnter={() => setPreviewedScoreId(score._id)}
+                >
+                  <div className={styles.leaderboardCell}>#{i + 1}</div>
                   <div className={styles.leaderboardCell}>{`${formatNumber(
                     score.score,
                     2
@@ -78,7 +93,7 @@ export default function Homepage(props: HomepageProps) {
                   <div className={styles.leaderboardCell}>
                     {score.playerName.toUpperCase()}
                   </div>
-                </Fragment>
+                </div>
               ))}
             </div>
           </div>

@@ -37,6 +37,8 @@ export default function StaticStack(props: StaticStackProps) {
       worldRef.current.removeBody(worldRef.current.bodies[0]);
     }
 
+    const widthCenter = canvasContainerDimensions.width / pixelsPerMeter / 2;
+
     // Add letters to the world with their specified positions and angles
     props.letters.forEach((letterData) => {
       const letter = letterData.letter as LETTERS;
@@ -47,7 +49,7 @@ export default function StaticStack(props: StaticStackProps) {
           width: canvasContainerDimensions.width,
           height: canvasContainerDimensions.height,
         },
-        [letterData.x, letterData.y],
+        [letterData.x + widthCenter, letterData.y],
         letterData.angle
       );
     });

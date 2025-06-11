@@ -236,7 +236,7 @@ export const deleteAllManipulableLetters = (world: p2.World) => {
   }
 };
 
-const clearAllManipulableLetters = (world: p2.World) => {
+const makeManipulableLettersStatic = (world: p2.World) => {
   for (const body of world.bodies) {
     if (isManipulableLetter(body)) {
       body.type = p2.Body.STATIC;
@@ -272,24 +272,36 @@ const makeTrialCopy = (
   return newBody;
 };
 
-export const transformManipulableLetters = (world: p2.World) => {
+export const makeTrialLetters = (
+  world: p2.World,
+  sandboxLetterIdMap: Record<number, LETTERS>,
+  setTrialLetterIdMap: (m: Record<number, LETTERS>) => void
+) => {
+  const newTrialIdMap: Record<number, LETTERS> = {};
   const trialLetters = [];
   for (let i = 0; i < world.bodies.length; i++) {
     const body = world.bodies[i];
     if (isManipulableLetter(body)) {
+      const letter = sandboxLetterIdMap[body.id];
       const trialLetter = makeTrialCopy(body, p2.Body.DYNAMIC, true);
+      newTrialIdMap[trialLetter.id] = letter;
       trialLetters.push(trialLetter);
     }
   }
-  clearAllManipulableLetters(world);
+  makeManipulableLettersStatic(world);
   for (const letter of trialLetters) {
     world.addBody(letter);
   }
+  setTrialLetterIdMap(newTrialIdMap);
 };
 
-export const startSimulation = (world: p2.World) => {
+export const startSimulation = (
+  world: p2.World,
+  sandboxLetterIdMap: Record<number, LETTERS>,
+  setTrialLetterIdMap: (m: Record<number, LETTERS>) => void
+) => {
   clearAllTrialLetters(world);
-  transformManipulableLetters(world);
+  makeTrialLetters(world, sandboxLetterIdMap, setTrialLetterIdMap);
   world.gravity[1] = -9.81;
 };
 
@@ -365,6 +377,8 @@ export const updateHighestPoint = (
 };
 
 export const startShakeTest = (body: p2.Body) => {
-  // body.applyImpulse([100, 0], body.position);
   body.velocity[0] = PUSH_VELOCITY;
 };
+
+export const adjustHeightByGroundHeight = (height: number) =>
+  height - GROUND_HEIGHT_METERS - GROUND_THICKNESS_METERS / 2;

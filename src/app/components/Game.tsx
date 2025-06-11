@@ -4,6 +4,7 @@ import Canvas from "./Canvas";
 import styles from "./../styles.module.css";
 import {
   IDimensions,
+  IPoint,
   IPolygons,
   LETTERS,
   Pages,
@@ -24,6 +25,7 @@ import {
 } from "../logic/game-config";
 import {
   addLetterToWorld,
+  adjustHeightByGroundHeight,
   allLettersStill,
   createWorld,
   deleteAllManipulableLetters,
@@ -67,6 +69,9 @@ export default function Game(props: GameProps) {
   const [canvasContainerDimensions, setCanvasContainerDimensions] =
     useState<IDimensions | null>(null);
   const [lettersInUse, setLettersInUse] = useState<Record<number, LETTERS>>({});
+  const [trialLetterIdMap, setTrialLetterIdMap] = useState<
+    Record<number, LETTERS>
+  >({});
   const [panOffset, setPanOffset] = useState<[number, number]>([0, 0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNamePopup, setShowNamePopup] = useState(false);
@@ -192,7 +197,11 @@ export default function Game(props: GameProps) {
   const toggleTrialMode = () => {
     if (!isTrialMode) {
       // Switching to trial mode
-      startSimulation(worldRef.current as p2.World);
+      startSimulation(
+        worldRef.current as p2.World,
+        lettersInUse,
+        setTrialLetterIdMap
+      );
       setTrialStage(TrialStage.APPLIED_GRAVITY);
       lastGravityTimeRef.current = Date.now();
     } else {
@@ -312,12 +321,15 @@ export default function Game(props: GameProps) {
 
     localStorage.setItem("playerName", playerName);
     setIsSubmitting(true);
-    if (worldRef.current) {
+    if (worldRef.current && groundRef.current) {
       submitScore(
         playerName,
-        highestPointRef.current ?? 0,
+        highestPointRef.current
+          ? adjustHeightByGroundHeight(highestPointRef.current)
+          : 0,
         worldRef.current,
-        lettersInUse
+        trialLetterIdMap,
+        groundRef.current.position as IPoint
       ).then(() => {
         setIsSubmitting(false);
         setShowNamePopup(false);

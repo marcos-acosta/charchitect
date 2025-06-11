@@ -1,7 +1,8 @@
 import * as p2 from "p2-es";
-import { isLetter } from "./p2-util";
-import { ILetterData, LETTERS } from "./interfaces";
+import { ILetterData, IPoint, LETTERS } from "./interfaces";
 import axios from "axios";
+import { GROUND_THICKNESS_METERS } from "./game-config";
+import { isTrialLetter } from "./game-util";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3030";
 
@@ -9,13 +10,19 @@ export const submitScore = async (
   name: string,
   height: number,
   world: p2.World,
-  lettersInUse: Record<number, LETTERS>
+  lettersInUse: Record<number, LETTERS>,
+  groundCenter: IPoint
 ) => {
-  const letters = world.bodies.filter((body) => isLetter(body));
+  const groundTopCenter = [
+    groundCenter[0],
+    groundCenter[1] + GROUND_THICKNESS_METERS / 2,
+  ];
+  const letters = world.bodies.filter((body) => isTrialLetter(body));
+  // Extract core data and normalize by center of ground
   const letterData: ILetterData[] = letters.map((letter) => ({
     letter: lettersInUse[letter.id],
-    x: letter.position[0],
-    y: letter.position[1],
+    x: letter.position[0] - groundTopCenter[0],
+    y: letter.position[1] - groundTopCenter[1],
     angle: letter.angle,
   }));
   const response = await axios.post(`${API_URL}/api/scores`, {

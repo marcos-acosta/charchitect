@@ -1,23 +1,37 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import * as p2 from "p2-es";
 import { paintCanvas } from "./CanvasPainter";
-import { LETTERS, ILetterData } from "../logic/interfaces";
+import { LETTERS, ILetterData, IDimensions } from "../logic/interfaces";
 import LETTER_POLYGONS from "../logic/letters";
 import { addLetterToWorld } from "../logic/game-util";
+import styles from "./../styles.module.css";
+import { computePixelsPerMeter } from "../logic/render-util";
+import { CANVAS_HEIGHT_METERS } from "../logic/game-config";
 
 interface StaticStackProps {
-  width: number;
-  height: number;
-  pixelsPerMeter: number;
   letters: ILetterData[];
   highestPoint?: number;
 }
 
 export default function StaticStack(props: StaticStackProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const [canvasContainerDimensions, setCanvasContainerDimensions] =
+    useState<IDimensions | null>(null);
   const worldRef = useRef<p2.World>(new p2.World({ gravity: [0, 0] }));
 
+  const pixelsPerMeter = canvasContainerDimensions
+    ? computePixelsPerMeter(
+        canvasContainerDimensions.height,
+        CANVAS_HEIGHT_METERS
+      )
+    : undefined;
+
   useEffect(() => {
+    if (!canvasContainerDimensions || !pixelsPerMeter) {
+      return;
+    }
+
     // Clear existing bodies
     while (worldRef.current.bodies.length > 0) {
       worldRef.current.removeBody(worldRef.current.bodies[0]);
@@ -29,7 +43,10 @@ export default function StaticStack(props: StaticStackProps) {
       addLetterToWorld(
         LETTER_POLYGONS[letter],
         worldRef.current,
-        { width: props.width, height: props.height },
+        {
+          width: canvasContainerDimensions.width,
+          height: canvasContainerDimensions.height,
+        },
         [letterData.x, letterData.y],
         letterData.angle
       );
@@ -42,9 +59,9 @@ export default function StaticStack(props: StaticStackProps) {
       if (ctx) {
         paintCanvas({
           ctx,
-          width: props.width,
-          height: props.height,
-          pixelsPerMeter: props.pixelsPerMeter,
+          width: canvasContainerDimensions.width,
+          height: canvasContainerDimensions.height,
+          pixelsPerMeter: pixelsPerMeter,
           world: worldRef.current,
           panOffset: [0, 0],
           highestPoint: props.highestPoint,
@@ -52,17 +69,52 @@ export default function StaticStack(props: StaticStackProps) {
         });
       }
     }
-  }, [props.letters, props.highestPoint]);
+  }, [props.letters, props.highestPoint, canvasContainerDimensions]);
+
+  // Function to measure container and update dimensions
+  const updateDimensions = () => {
+    if (!canvasContainerRef.current) return;
+
+    const { width, height } =
+      canvasContainerRef.current.getBoundingClientRect();
+    const widthFloored = Math.floor(width) - 3;
+    const heightFloored = Math.floor(height) - 3;
+    setCanvasContainerDimensions({
+      width: widthFloored,
+      height: heightFloored,
+    });
+  };
+
+  // Create canvas and listen for canvas size updates
+  useEffect(() => {
+    if (!canvasContainerRef.current) return;
+    // Initial size measurement
+    updateDimensions();
+    // Set up resize observer
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    resizeObserver.observe(canvasContainerRef.current);
+    // Clean up
+    return () => resizeObserver.disconnect();
+  }, [canvasContainerRef.current]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        width: `${props.width}px`,
-        height: `${props.height}px`,
-      }}
-      width={props.width}
-      height={props.height}
-    />
+    <div className={styles.staticCanvasContainer}>
+      <div
+        className={styles.staticCanvasInnerContainer}
+        ref={canvasContainerRef}
+      >
+        {canvasContainerDimensions && (
+          <canvas
+            ref={canvasRef}
+            style={{
+              width: `${canvasContainerDimensions.width}px`,
+              height: `${canvasContainerDimensions.height}px`,
+            }}
+            width={canvasContainerDimensions.width}
+            height={canvasContainerDimensions.height}
+          />
+        )}
+      </div>
+    </div>
   );
 }

@@ -12,6 +12,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  min-height: 0;
 }
 
 .sidebarAndCanvas {
@@ -307,6 +308,7 @@
 
 .sidePanel {
   padding-top: 20px;
+  height: 100%;
 }
 
 .sideBarInnerContainer {
@@ -328,7 +330,7 @@
   display: grid;
   grid-template-columns: 2fr 3fr 3fr;
   font-family: var(--font-b12-mono);
-  font-size: 1.2vw;
+  font-size: 1.5vw;
   cursor: pointer;
   padding-top: 3px;
   padding-bottom: 3px;
@@ -337,7 +339,7 @@
 }
 
 .leaderboardRow.header {
-  font-size: 1.3vw;
+  font-size: 1.5vw;
   margin-top: 8px;
   text-transform: uppercase;
   font-weight: bold;
@@ -356,6 +358,20 @@
 }
 
 .previewContainer {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.staticCanvasContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staticCanvasInnerContainer {
   width: 100%;
   height: 100%;
 }

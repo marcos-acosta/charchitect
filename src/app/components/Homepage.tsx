@@ -104,9 +104,6 @@ export default function Homepage(props: HomepageProps) {
           <StaticStack
             letters={scoreToShow.letters}
             highestPoint={scoreToShow.score}
-            width={300}
-            height={500}
-            pixelsPerMeter={30}
           />
         )}
       </div>

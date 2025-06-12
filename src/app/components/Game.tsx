@@ -41,6 +41,7 @@ import LETTER_POLYGONS from "../logic/letters";
 import { submitScore } from "../logic/server";
 import { combineClasses } from "../logic/util";
 import ActionButton from "./ActionButton";
+import ScreenOverlay from "./ScreenOverlay";
 
 interface GameProps {
   setPage: (page: Pages) => void;
@@ -516,25 +517,33 @@ export default function Game(props: GameProps) {
           <span>{isTrialMode ? "Testing" : "Building"}</span>
         </div>
       </div>
-      {showNamePopup && (
-        <div className={styles.submissionDialogContainer}>
-          <div className={styles.submissionDialogContent}>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => {
-                e.preventDefault();
-                setPlayerName(e.target.value);
-              }}
-              placeholder="Enter your screen name"
-            />
-            <button onClick={handleNameSubmit} disabled={!playerName.trim()}>
-              Submit Score
-            </button>
-            <button onClick={() => setShowNamePopup(false)}>Cancel</button>
-          </div>
+      <ScreenOverlay
+        show={
+          showNamePopup && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE
+        }
+        delayMs={250}
+      >
+        <div className={styles.submissionDialogContent}>
+          <div className={styles.submissionDialogTitle}>Submit type stack</div>
+          <input
+            type="text"
+            value={playerName}
+            onChange={(e) => {
+              e.preventDefault();
+              setPlayerName(e.target.value);
+            }}
+            placeholder="Enter your screen name"
+          />
+          <button onClick={handleNameSubmit} disabled={!playerName.trim()}>
+            Submit Score
+          </button>
+          <button onClick={() => setShowNamePopup(false)}>Cancel</button>
         </div>
-      )}
+      </ScreenOverlay>
+      {/* {showNamePopup && trialStage === TrialStage.STABLE_AFTER_EARTHQUAKE && (
+        <div className={styles.submissionDialogContainer}>
+        </div>
+      )} */}
     </>
   );
 }

@@ -253,15 +253,26 @@
   left: 0;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
 .submissionDialogContent {
   background-color: var(--background);
   color: var(--foreground);
-  border: 1px solid var(--foreground);
-  padding: 20px;
-  border-radius: 10px;
+  padding: 2vw;
+}
+
+.submissionDialogTitle {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  font-size: 3.6vw;
+  font-family: var(--font-noto-serif), serif;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .canvasContainer canvas {
@@ -374,4 +385,23 @@
 .staticCanvasInnerContainer {
   width: 100%;
   height: 100%;
+}
+
+.fullScreenShadow {
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background);
+  opacity: 0;
+  transition-property: opacity;
+  transition-duration: 0.25s;
+}
+
+.fullScreenShadow.visibleOverlay {
+  opacity: 1;
 }
